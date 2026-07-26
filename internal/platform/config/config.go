@@ -16,7 +16,7 @@ type Config struct {
 
 func LoadConfig() *Config {
 	if err := godotenv.Load(); err != nil {
-		log.Fatalf("Error al caragar las variables de entorno: %v", err)
+		log.Println("Info: No se encontró archivo .env local. Se usarán las variables del entorno del sistema.")
 	}
 	
 	cfg := &Config{
