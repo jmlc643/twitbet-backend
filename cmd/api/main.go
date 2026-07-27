@@ -7,6 +7,10 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+
+	identityHTTP "github.com/jmlc643/twitbet-backend/internal/identity/infrastructure/http/router"
+	identityModel "github.com/jmlc643/twitbet-backend/internal/identity/infrastructure/persistence/model"
+
 	"github.com/jmlc643/twitbet-backend/internal/platform/config"
 	"github.com/jmlc643/twitbet-backend/internal/platform/database"
 	"github.com/jmlc643/twitbet-backend/internal/platform/redis"
@@ -25,8 +29,11 @@ func main() {
 		log.Fatalf("Falló la inicialización de Redis: %v", err)
 	}
 
-	router := gin.Default()
+	if err := database.AutoMigrate(db, &identityModel.UserModel{}); err != nil {
+		log.Fatalf("Falló la migración de base de datos: %v", err)
+	}
 
+	router := gin.Default()
 	router.SetTrustedProxies(nil)
 
 	router.GET("/healthcheck", func(c *gin.Context) {
@@ -58,6 +65,8 @@ func main() {
 			},
 		})
 	})
+
+	identityHTTP.RegisterRoutes(router, db, cfg.JWTSecret)
 
 	log.Printf("Servidor corriendo en el puerto %s", cfg.Port)
 	if err := router.Run(":" + cfg.Port); err != nil {
