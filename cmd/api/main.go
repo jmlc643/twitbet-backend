@@ -13,6 +13,7 @@ import (
 
 	"github.com/jmlc643/twitbet-backend/internal/platform/config"
 	"github.com/jmlc643/twitbet-backend/internal/platform/database"
+	"github.com/jmlc643/twitbet-backend/internal/platform/http/middleware"
 	"github.com/jmlc643/twitbet-backend/internal/platform/redis"
 )
 
@@ -35,6 +36,8 @@ func main() {
 
 	router := gin.Default()
 	router.SetTrustedProxies(nil)
+
+	router.Use(middleware.CORSMiddleware(cfg.FrontendURL))
 
 	router.GET("/healthcheck", func(c *gin.Context) {
 		ctx, cancel := context.WithTimeout(c.Request.Context(), 2*time.Second)
