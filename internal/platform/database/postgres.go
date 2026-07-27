@@ -35,3 +35,12 @@ func NewPostgresDB(databaseURL string) (*gorm.DB, error) {
 	log.Println("Conexión exitosa a PostgreSQL")
 	return db, nil
 }
+
+func AutoMigrate(db *gorm.DB, dst ...interface{}) error {
+	log.Println("Ejecutando migraciones de base de datos...")
+	if err := db.AutoMigrate(dst...); err != nil {
+		return fmt.Errorf("error ejecutando automigraciones: %w", err)
+	}
+	log.Println("Migraciones completadas correctamente")
+	return nil
+}
