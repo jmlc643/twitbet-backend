@@ -2,6 +2,8 @@ package usecase
 
 import (
 	"context"
+	"math/rand"
+	"time"
 
 	"github.com/jmlc643/twitbet-backend/internal/identity/application/input"
 	"github.com/jmlc643/twitbet-backend/internal/identity/application/output"
@@ -29,6 +31,18 @@ func NewRegisterUseCase(
 	}
 }
 
+var defaultAvatars = []string{
+	"/avatars/avatar1.png",
+	"/avatars/avatar2.png",
+	"/avatars/avatar3.png",
+	"/avatars/avatar4.png",
+}
+
+func getRandomAvatar() string {
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	return defaultAvatars[r.Intn(len(defaultAvatars))]
+}
+
 func (uc *RegisterUseCase) Execute(ctx context.Context, in input.RegisterInput) (*output.AuthOutput, error) {
 	existing, err := uc.userRepo.FindByEmail(ctx, in.Email)
 	if err != nil {
@@ -43,10 +57,13 @@ func (uc *RegisterUseCase) Execute(ctx context.Context, in input.RegisterInput) 
 		return nil, apperror.ErrInternal
 	}
 
+	avatar := getRandomAvatar()
+
 	user := &entity.User{
-		Username:     in.Username,
-		Email:        in.Email,
-		PasswordHash: hashedPassword,
+		Username:     	in.Username,
+		Email:        	in.Email,
+		PasswordHash: 	hashedPassword,
+		AvatarURL:		avatar,
 	}
 
 	if err := uc.userRepo.Create(ctx, user); err != nil {
