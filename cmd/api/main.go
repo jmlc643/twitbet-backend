@@ -33,7 +33,7 @@ func main() {
 		log.Fatalf("Falló la inicialización de Redis: %v", err)
 	}
 
-	if err := database.AutoMigrate(db, &identityModel.UserModel{}, &leagueModel.LeagueModel{}, &leagueModel.ParticipantModel{}); err != nil {
+	if err := database.AutoMigrate(db, &identityModel.UserModel{}, &leagueModel.LeagueModel{}, &leagueModel.ParticipantModel{}, &leagueModel.TransactionModel{}); err != nil {
 		log.Fatalf("Falló la migración de base de datos: %v", err)
 	}
 
@@ -63,11 +63,11 @@ func main() {
 		}
 
 		c.JSON(httpStatus, gin.H{
-			"status": "UP",
+			"status":    "UP",
 			"timestamp": time.Now().Format(time.RFC3339),
 			"services": gin.H{
 				"postgres": postgresStatus,
-				"redis": redisStatus,
+				"redis":    redisStatus,
 			},
 		})
 	})

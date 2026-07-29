@@ -21,10 +21,22 @@ func EntityToLeagueModel(e *entity.League) *model.LeagueModel {
 
 func EntityToParticipantModel(e *entity.Participant) *model.ParticipantModel {
 	return &model.ParticipantModel{
-		ID:       e.ID.String(),
-		LeagueID: e.LeagueID.String(),
-		UserID:   e.UserID.String(),
-		Balance:  e.Balance,
-		JoinedAt: e.JoinedAt,
+		ID:                e.ID.String(),
+		LeagueID:          e.LeagueID.String(),
+		UserID:            e.UserID.String(),
+		Balance:           e.Balance,
+		RechargesConsumed: e.RechargesConsumed,
+		JoinedAt:          e.JoinedAt,
+	}
+}
+
+func EntityToTransactionModel(e *entity.Transaction) *model.TransactionModel {
+	return &model.TransactionModel{
+		ID:        e.ID.String(),
+		LeagueID:  e.LeagueID.String(),
+		UserID:    e.UserID.String(),
+		Amount:    e.Amount,
+		Type:      string(e.Type),
+		CreatedAt: e.CreatedAt,
 	}
 }

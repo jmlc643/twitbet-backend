@@ -16,8 +16,9 @@ func RegisterRoutes(router *gin.Engine, db *gorm.DB, jwtSecret string) {
 	leagueRepo := postgres.NewLeagueRepository(db)
 
 	createLeagueUC := usecase.NewCreateLeagueUseCase(leagueRepo)
+	joinLeagueUC := usecase.NewJoinLeagueUseCase(leagueRepo)
 
-	leagueHandler := handler.NewLeagueHandler(createLeagueUC)
+	leagueHandler := handler.NewLeagueHandler(createLeagueUC, joinLeagueUC)
 
 	tokenService := identityAdapter.NewJWTTokenService(jwtSecret)
 	authMiddleware := identityMiddleware.JWTMiddleware(tokenService)
@@ -28,6 +29,7 @@ func RegisterRoutes(router *gin.Engine, db *gorm.DB, jwtSecret string) {
 		leagueRoutes.Use(authMiddleware)
 		{
 			leagueRoutes.POST("", leagueHandler.CreateLeague)
+			leagueRoutes.POST("/join", leagueHandler.JoinLeague)
 		}
 	}
 }

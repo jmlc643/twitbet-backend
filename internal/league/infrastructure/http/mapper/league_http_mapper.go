@@ -24,3 +24,18 @@ func CreateLeagueOutputToResponse(out *output.CreateLeagueOutput) response.Creat
 		InviteCode: out.InviteCode,
 	}
 }
+
+func JoinLeagueRequestToInput(req request.JoinLeagueRequest, userID uuid.UUID) input.JoinLeagueInput {
+	return input.JoinLeagueInput{
+		UserID:     userID,
+		InviteCode: req.InviteCode,
+	}
+}
+
+func JoinLeagueOutputToResponse(out *output.JoinLeagueOutput) response.JoinLeagueResponse {
+	return response.JoinLeagueResponse{
+		LeagueID:   out.LeagueID.String(),
+		LeagueName: out.LeagueName,
+		Balance:    out.Balance,
+	}
+}

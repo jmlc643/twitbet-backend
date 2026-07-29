@@ -3,9 +3,13 @@ package repository
 import (
 	"context"
 
+	"github.com/google/uuid"
 	"github.com/jmlc643/twitbet-backend/internal/league/domain/entity"
 )
 
 type LeagueRepository interface {
-	CreateLeagueWithAdminParticipant(ctx context.Context, l *entity.League, p *entity.Participant) error
+	CreateLeagueWithAdminParticipant(ctx context.Context, l *entity.League, p *entity.Participant, t *entity.Transaction) error
+	GetLeagueByInviteCode(ctx context.Context, code string) (*entity.League, error)
+	IsParticipant(ctx context.Context, leagueID, userID uuid.UUID) (bool, error)
+	JoinLeague(ctx context.Context, p *entity.Participant, t *entity.Transaction) error
 }

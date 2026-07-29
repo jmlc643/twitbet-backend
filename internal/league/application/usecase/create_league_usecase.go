@@ -28,7 +28,12 @@ func (uc *CreateLeagueUseCase) Execute(ctx context.Context, in input.CreateLeagu
 		return nil, err
 	}
 
-	err = uc.repo.CreateLeagueWithAdminParticipant(ctx, league, participant)
+	transaction, err := entity.NewTransaction(league.ID, in.AdminID, in.InitialBalance, entity.TransactionTypeInitialBalance)
+	if err != nil {
+		return nil, err
+	}
+
+	err = uc.repo.CreateLeagueWithAdminParticipant(ctx, league, participant, transaction)
 	if err != nil {
 		return nil, err
 	}
