@@ -11,6 +11,9 @@ import (
 	identityHTTP "github.com/jmlc643/twitbet-backend/internal/identity/infrastructure/http/router"
 	identityModel "github.com/jmlc643/twitbet-backend/internal/identity/infrastructure/persistence/model"
 
+	leagueHTTP "github.com/jmlc643/twitbet-backend/internal/league/infrastructure/http/router"
+	leagueModel "github.com/jmlc643/twitbet-backend/internal/league/infrastructure/persistence/model"
+
 	"github.com/jmlc643/twitbet-backend/internal/platform/config"
 	"github.com/jmlc643/twitbet-backend/internal/platform/database"
 	"github.com/jmlc643/twitbet-backend/internal/platform/http/middleware"
@@ -30,7 +33,7 @@ func main() {
 		log.Fatalf("Falló la inicialización de Redis: %v", err)
 	}
 
-	if err := database.AutoMigrate(db, &identityModel.UserModel{}); err != nil {
+	if err := database.AutoMigrate(db, &identityModel.UserModel{}, &leagueModel.LeagueModel{}, &leagueModel.ParticipantModel{}, &leagueModel.TransactionModel{}); err != nil {
 		log.Fatalf("Falló la migración de base de datos: %v", err)
 	}
 
@@ -60,16 +63,17 @@ func main() {
 		}
 
 		c.JSON(httpStatus, gin.H{
-			"status": "UP",
+			"status":    "UP",
 			"timestamp": time.Now().Format(time.RFC3339),
 			"services": gin.H{
 				"postgres": postgresStatus,
-				"redis": redisStatus,
+				"redis":    redisStatus,
 			},
 		})
 	})
 
 	identityHTTP.RegisterRoutes(router, db, cfg.JWTSecret)
+	leagueHTTP.RegisterRoutes(router, db, cfg.JWTSecret)
 
 	log.Printf("Servidor corriendo en el puerto %s", cfg.Port)
 	if err := router.Run(":" + cfg.Port); err != nil {
