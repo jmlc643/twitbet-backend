@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"context"
+	"strings"
 
 	"github.com/jmlc643/twitbet-backend/internal/league/application/input"
 	"github.com/jmlc643/twitbet-backend/internal/league/application/output"
@@ -19,7 +20,8 @@ func NewJoinLeagueUseCase(repo repository.LeagueRepository) *JoinLeagueUseCase {
 }
 
 func (uc *JoinLeagueUseCase) Execute(ctx context.Context, in input.JoinLeagueInput) (*output.JoinLeagueOutput, error) {
-	league, err := uc.repo.GetLeagueByInviteCode(ctx, in.InviteCode)
+	inviteCode := strings.ToUpper(in.InviteCode)
+	league, err := uc.repo.GetLeagueByInviteCode(ctx, inviteCode)
 	if err != nil {
 		return nil, err
 	}

@@ -3,6 +3,7 @@ package entity
 import (
 	"crypto/rand"
 	"encoding/hex"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -58,5 +59,5 @@ func generateInviteCode(length int) (string, error) {
 	if _, err := rand.Read(bytes); err != nil {
 		return "", err
 	}
-	return hex.EncodeToString(bytes), nil
+	return strings.ToUpper(hex.EncodeToString(bytes)), nil
 }
