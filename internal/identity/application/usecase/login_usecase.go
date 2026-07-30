@@ -18,14 +18,14 @@ type LoginUseCase struct {
 }
 
 func NewLoginUseCase(
-	userRepo 		repository.UserRepository,
-	hasher 			port.PasswordHasher,
-	tokenService 	port.TokenService,
+	userRepo repository.UserRepository,
+	hasher port.PasswordHasher,
+	tokenService port.TokenService,
 ) *LoginUseCase {
 	return &LoginUseCase{
-		userRepo: 		userRepo,
-		hasher: 		hasher,
-		tokenService: 	tokenService,
+		userRepo:     userRepo,
+		hasher:       hasher,
+		tokenService: tokenService,
 	}
 }
 
@@ -48,11 +48,11 @@ func (uc *LoginUseCase) Execute(ctx context.Context, in input.LoginInput) (*outp
 	return &output.AuthOutput{
 		Token: token,
 		User: output.UserOutput{
-			ID: 		user.ID,
-			Username: 	user.Username,
-			Email: 		user.Email,
-			AvatarURL: 	user.AvatarURL,
-			CreatedAt: 	user.CreatedAt,
+			ID:        user.ID,
+			Username:  user.Username,
+			Email:     user.Email,
+			AvatarURL: user.AvatarURL,
+			CreatedAt: user.CreatedAt,
 		},
 	}, nil
 }

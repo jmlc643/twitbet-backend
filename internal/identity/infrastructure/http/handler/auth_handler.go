@@ -12,20 +12,20 @@ import (
 )
 
 type AuthHandler struct {
-	registerUC 		*usecase.RegisterUseCase
-	loginUC 		*usecase.LoginUseCase
-	getProfileUC 	*usecase.GetProfileUseCase
+	registerUC   *usecase.RegisterUseCase
+	loginUC      *usecase.LoginUseCase
+	getProfileUC *usecase.GetProfileUseCase
 }
 
 func NewAuthHandler(
-	registerUC 		*usecase.RegisterUseCase,
-	loginUC 		*usecase.LoginUseCase,
-	getProfileUC 	*usecase.GetProfileUseCase,
+	registerUC *usecase.RegisterUseCase,
+	loginUC *usecase.LoginUseCase,
+	getProfileUC *usecase.GetProfileUseCase,
 ) *AuthHandler {
 	return &AuthHandler{
-		registerUC: 	registerUC,
-		loginUC: 		loginUC,
-		getProfileUC: 	getProfileUC,
+		registerUC:   registerUC,
+		loginUC:      loginUC,
+		getProfileUC: getProfileUC,
 	}
 }
 

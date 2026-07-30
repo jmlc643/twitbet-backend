@@ -5,20 +5,27 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/jmlc643/twitbet-backend/internal/league/application/input"
 	"github.com/jmlc643/twitbet-backend/internal/league/application/usecase"
 	"github.com/jmlc643/twitbet-backend/internal/league/infrastructure/http/dto/request"
 	"github.com/jmlc643/twitbet-backend/internal/league/infrastructure/http/mapper"
 )
 
 type LeagueHandler struct {
-	createLeagueUC *usecase.CreateLeagueUseCase
-	joinLeagueUC   *usecase.JoinLeagueUseCase
+	createLeagueUC   *usecase.CreateLeagueUseCase
+	joinLeagueUC     *usecase.JoinLeagueUseCase
+	getUserLeaguesUC *usecase.GetUserLeaguesUseCase
 }
 
-func NewLeagueHandler(createLeagueUC *usecase.CreateLeagueUseCase, joinLeagueUC *usecase.JoinLeagueUseCase) *LeagueHandler {
+func NewLeagueHandler(
+	createLeagueUC *usecase.CreateLeagueUseCase,
+	joinLeagueUC *usecase.JoinLeagueUseCase,
+	getUserLeaguesUC *usecase.GetUserLeaguesUseCase,
+) *LeagueHandler {
 	return &LeagueHandler{
-		createLeagueUC: createLeagueUC,
-		joinLeagueUC:   joinLeagueUC,
+		createLeagueUC:   createLeagueUC,
+		joinLeagueUC:     joinLeagueUC,
+		getUserLeaguesUC: getUserLeaguesUC,
 	}
 }
 
@@ -78,4 +85,30 @@ func (h *LeagueHandler) JoinLeague(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, mapper.JoinLeagueOutputToResponse(output))
+}
+
+func (h *LeagueHandler) GetUserLeagues(c *gin.Context) {
+	userIDStr, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "no autorizado"})
+		return
+	}
+
+	userID, err := uuid.Parse(userIDStr.(string))
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "id de usuario inválido"})
+		return
+	}
+
+	in := input.GetUserLeaguesInput{
+		UserID: userID,
+	}
+
+	output, err := h.getUserLeaguesUC.Execute(c.Request.Context(), in)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, mapper.GetUserLeaguesOutputToResponse(output))
 }

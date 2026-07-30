@@ -18,11 +18,11 @@ func NewJWTTokenService(secret string) *JWTTokenService {
 }
 
 func (j *JWTTokenService) GenerateToken(userID, email string) (string, error) {
-	claims := jwt.MapClaims {
-		"sub": userID,
+	claims := jwt.MapClaims{
+		"sub":   userID,
 		"email": email,
-		"exp": time.Now().Add(time.Hour * 72).Unix(),
-		"iat": time.Now().Unix(),
+		"exp":   time.Now().Add(time.Hour * 72).Unix(),
+		"iat":   time.Now().Unix(),
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)

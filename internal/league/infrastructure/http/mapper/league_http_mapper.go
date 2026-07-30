@@ -39,3 +39,19 @@ func JoinLeagueOutputToResponse(out *output.JoinLeagueOutput) response.JoinLeagu
 		Balance:    out.Balance,
 	}
 }
+
+func GetUserLeaguesOutputToResponse(out *output.GetUserLeaguesOutput) response.GetUserLeaguesResponse {
+	var leagues []response.LeagueSummaryResponse
+	for _, l := range out.Leagues {
+		leagues = append(leagues, response.LeagueSummaryResponse{
+			LeagueID:         l.LeagueID.String(),
+			Name:             l.Name,
+			Role:             string(l.Role),
+			ParticipantCount: l.ParticipantCount,
+			Balance:          l.Balance,
+		})
+	}
+	return response.GetUserLeaguesResponse{
+		Leagues: leagues,
+	}
+}

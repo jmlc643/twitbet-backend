@@ -23,7 +23,7 @@ func (r *UserGormRepository) Create(ctx context.Context, user *entity.User) erro
 	if err := r.db.WithContext(ctx).Create(&dbModel).Error; err != nil {
 		return err
 	}
-	
+
 	user.ID = dbModel.ID
 	user.CreatedAt = dbModel.CreatedAt
 	return nil
@@ -40,7 +40,7 @@ func (r *UserGormRepository) FindByEmail(ctx context.Context, email string) (*en
 	if result.RowsAffected == 0 {
 		return nil, nil
 	}
-	
+
 	return mapper.UserGORMToEntity(&dbModel), nil
 }
 

@@ -19,7 +19,7 @@ func LoadConfig() *Config {
 	if err := godotenv.Load(); err != nil {
 		log.Println("Info: No se encontró archivo .env local. Se usarán las variables del entorno del sistema.")
 	}
-	
+
 	cfg := &Config{
 		Port:        getEnv("PORT", "8080"),
 		DatabaseURL: getEnv("DATABASE_URL", ""),
@@ -34,7 +34,7 @@ func LoadConfig() *Config {
 
 	if cfg.RedisURL == "" {
 		log.Fatal("La variable de entorno REDIS_URL está vacía.")
-	} 
+	}
 
 	return cfg
 }
