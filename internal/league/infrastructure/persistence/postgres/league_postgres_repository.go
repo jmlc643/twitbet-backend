@@ -148,3 +148,82 @@ func (r *LeagueRepository) JoinLeague(ctx context.Context, p *entity.Participant
 
 	return tx.Commit().Error
 }
+
+func (r *LeagueRepository) GetLeagueByID(ctx context.Context, id uuid.UUID) (*entity.League, error) {
+	var modelLeague model.LeagueModel
+	err := r.db.WithContext(ctx).Where("id = ?", id.String()).First(&modelLeague).Error
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	adminID, _ := uuid.Parse(modelLeague.AdminID)
+	leagueID, _ := uuid.Parse(modelLeague.ID)
+
+	return &entity.League{
+		ID:             leagueID,
+		AdminID:        adminID,
+		Name:           modelLeague.Name,
+		InitialBalance: modelLeague.InitialBalance,
+		MaxRecharges:   modelLeague.MaxRecharges,
+		HideStandings:  modelLeague.HideStandings,
+		InviteCode:     modelLeague.InviteCode,
+		CreatedAt:      modelLeague.CreatedAt,
+		UpdatedAt:      modelLeague.UpdatedAt,
+	}, nil
+}
+
+func (r *LeagueRepository) UpdateLeague(ctx context.Context, league *entity.League) error {
+	leagueModel := mapper.EntityToLeagueModel(league)
+	return r.db.WithContext(ctx).Save(leagueModel).Error
+}
+
+func (r *LeagueRepository) GetParticipantsByLeagueID(ctx context.Context, id uuid.UUID) ([]entity.ParticipantRanking, error) {
+	var results []struct {
+		ParticipantID string
+		UserID        string
+		Username      string
+		AvatarURL     *string
+		Balance       float64
+		Position      int
+	}
+
+	query := `
+		SELECT 
+			p.id as participant_id,
+			p.user_id,
+			u.username,
+			u.avatar_url,
+			p.balance,
+			RANK() OVER (ORDER BY p.balance DESC) as position
+		FROM league_participants p
+		JOIN users u ON p.user_id = u.id
+		WHERE p.league_id = ?
+		ORDER BY p.balance DESC
+	`
+
+	err := r.db.WithContext(ctx).Raw(query, id.String()).Scan(&results).Error
+	if err != nil {
+		return nil, err
+	}
+
+	var rankings []entity.ParticipantRanking
+	for _, res := range results {
+		participantID, _ := uuid.Parse(res.ParticipantID)
+		userID, _ := uuid.Parse(res.UserID)
+
+		rankings = append(rankings, entity.ParticipantRanking{
+			ParticipantID:  participantID,
+			UserID:         userID,
+			Username:       res.Username,
+			ProfilePicture: res.AvatarURL,
+			Balance:        res.Balance,
+			Position:       res.Position,
+		})
+	}
+
+	return rankings, nil
+}
+
