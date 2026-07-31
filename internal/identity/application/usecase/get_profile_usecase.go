@@ -25,10 +25,10 @@ func (uc *GetProfileUseCase) Execute(ctx context.Context, userID string) (*outpu
 	}
 
 	return &output.UserOutput{
-		ID: 		user.ID,
-		Username: 	user.Username,
-		Email: 		user.Email,
-		AvatarURL: 	user.AvatarURL,
-		CreatedAt: 	user.CreatedAt,
+		ID:        user.ID,
+		Username:  user.Username,
+		Email:     user.Email,
+		AvatarURL: user.AvatarURL,
+		CreatedAt: user.CreatedAt,
 	}, nil
 }

@@ -39,3 +39,44 @@ func JoinLeagueOutputToResponse(out *output.JoinLeagueOutput) response.JoinLeagu
 		Balance:    out.Balance,
 	}
 }
+
+func GetUserLeaguesOutputToResponse(out *output.GetUserLeaguesOutput) response.GetUserLeaguesResponse {
+	var leagues []response.LeagueSummaryResponse
+	for _, l := range out.Leagues {
+		leagues = append(leagues, response.LeagueSummaryResponse{
+			LeagueID:         l.LeagueID.String(),
+			Name:             l.Name,
+			Role:             string(l.Role),
+			ParticipantCount: l.ParticipantCount,
+			Balance:          l.Balance,
+		})
+	}
+	return response.GetUserLeaguesResponse{
+		Leagues: leagues,
+	}
+}
+
+func GetLeagueDetailsOutputToResponse(out output.GetLeagueDetailsOutput) response.GetLeagueDetailsResponse {
+	var participants []response.ParticipantRankingResponse
+	for _, p := range out.Participants {
+		participants = append(participants, response.ParticipantRankingResponse{
+			ParticipantID:  p.ParticipantID.String(),
+			UserID:         p.UserID.String(),
+			Username:       p.Username,
+			ProfilePicture: p.ProfilePicture,
+			Balance:        p.Balance,
+			Position:       p.Position,
+		})
+	}
+	return response.GetLeagueDetailsResponse{
+		LeagueID:         out.LeagueID.String(),
+		Name:             out.Name,
+		AdminID:          out.AdminID.String(),
+		InitialBalance:   out.InitialBalance,
+		MaxRecharges:     out.MaxRecharges,
+		IsRankingVisible: out.IsRankingVisible,
+		InviteCode:       out.InviteCode,
+		CreatedAt:        out.CreatedAt,
+		Participants:     participants,
+	}
+}

@@ -20,7 +20,7 @@ func NewRedisClient(redisURL string) (*redis.Client, error) {
 	if err := rdb.Ping(ctx).Err(); err != nil {
 		return nil, fmt.Errorf("error al hacer Ping a Redis: %w", err)
 	}
-	
+
 	log.Println("Conexión exitosa a Redis")
 	return rdb, nil
 }

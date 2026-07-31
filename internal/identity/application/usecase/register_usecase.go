@@ -14,20 +14,20 @@ import (
 )
 
 type RegisterUseCase struct {
-	userRepo 		repository.UserRepository
-	hasher			port.PasswordHasher
-	tokenService	port.TokenService
+	userRepo     repository.UserRepository
+	hasher       port.PasswordHasher
+	tokenService port.TokenService
 }
 
 func NewRegisterUseCase(
-	repo		repository.UserRepository,
-	hasher		port.PasswordHasher,
-	tokenSvc 	port.TokenService,
+	repo repository.UserRepository,
+	hasher port.PasswordHasher,
+	tokenSvc port.TokenService,
 ) *RegisterUseCase {
 	return &RegisterUseCase{
-		userRepo: 		repo,
-		hasher: 		hasher,
-		tokenService: 	tokenSvc,
+		userRepo:     repo,
+		hasher:       hasher,
+		tokenService: tokenSvc,
 	}
 }
 
@@ -60,10 +60,10 @@ func (uc *RegisterUseCase) Execute(ctx context.Context, in input.RegisterInput) 
 	avatar := getRandomAvatar()
 
 	user := &entity.User{
-		Username:     	in.Username,
-		Email:        	in.Email,
-		PasswordHash: 	hashedPassword,
-		AvatarURL:		avatar,
+		Username:     in.Username,
+		Email:        in.Email,
+		PasswordHash: hashedPassword,
+		AvatarURL:    avatar,
 	}
 
 	if err := uc.userRepo.Create(ctx, user); err != nil {
