@@ -19,8 +19,9 @@ func RegisterRoutes(router *gin.Engine, db *gorm.DB, jwtSecret string) {
 	registerUC := usecase.NewRegisterUseCase(userRepo, hasher, tokenService)
 	loginUC := usecase.NewLoginUseCase(userRepo, hasher, tokenService)
 	getProfileUC := usecase.NewGetProfileUseCase(userRepo)
+	updateProfileUC := usecase.NewUpdateProfileUseCase(userRepo)
 
-	authHandler := handler.NewAuthHandler(registerUC, loginUC, getProfileUC)
+	authHandler := handler.NewAuthHandler(registerUC, loginUC, getProfileUC, updateProfileUC)
 	jwtMiddleware := middleware.JWTMiddleware(tokenService)
 
 	api := router.Group("/api/v1")
@@ -35,6 +36,7 @@ func RegisterRoutes(router *gin.Engine, db *gorm.DB, jwtSecret string) {
 		users.Use(jwtMiddleware)
 		{
 			users.GET("/me", authHandler.GetProfile)
+			users.PUT("/me", authHandler.UpdateProfile)
 		}
 	}
 }

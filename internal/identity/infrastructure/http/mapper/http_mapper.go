@@ -46,3 +46,11 @@ func UserOutputToResponse(out *output.UserOutput) response.UserResponse {
 		CreatedAt: out.CreatedAt.Format(time.RFC3339),
 	}
 }
+
+func UpdateProfileRequestToInput(req request.UpdateProfileRequest, userID string) input.UpdateProfileInput {
+	return input.UpdateProfileInput{
+		UserID:    userID,
+		Username:  req.Username,
+		AvatarURL: req.AvatarURL,
+	}
+}
