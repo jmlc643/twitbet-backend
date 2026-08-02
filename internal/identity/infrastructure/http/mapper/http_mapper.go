@@ -25,24 +25,40 @@ func LoginRequestToInput(req request.LoginRequest) input.LoginInput {
 }
 
 func AuthOutputToResponse(out *output.AuthOutput) response.AuthResponse {
+	var avatar *string
+	if out.User.AvatarURL != "" {
+		avatar = &out.User.AvatarURL
+	}
 	return response.AuthResponse{
 		Token: out.Token,
 		User: response.UserResponse{
 			ID:        out.User.ID,
 			Username:  out.User.Username,
 			Email:     out.User.Email,
-			AvatarURL: out.User.AvatarURL,
+			AvatarURL: avatar,
 			CreatedAt: out.User.CreatedAt.Format(time.RFC3339),
 		},
 	}
 }
 
 func UserOutputToResponse(out *output.UserOutput) response.UserResponse {
+	var avatar *string
+	if out.AvatarURL != "" {
+		avatar = &out.AvatarURL
+	}
 	return response.UserResponse{
 		ID:        out.ID,
 		Username:  out.Username,
 		Email:     out.Email,
-		AvatarURL: out.AvatarURL,
+		AvatarURL: avatar,
 		CreatedAt: out.CreatedAt.Format(time.RFC3339),
+	}
+}
+
+func UpdateProfileRequestToInput(req request.UpdateProfileRequest, userID string) input.UpdateProfileInput {
+	return input.UpdateProfileInput{
+		UserID:    userID,
+		Username:  req.Username,
+		AvatarURL: req.AvatarURL,
 	}
 }

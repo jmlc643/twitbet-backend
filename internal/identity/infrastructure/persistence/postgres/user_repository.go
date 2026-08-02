@@ -58,3 +58,18 @@ func (r *UserGormRepository) FindByID(ctx context.Context, id string) (*entity.U
 
 	return mapper.UserGORMToEntity(&dbModel), nil
 }
+
+func (r *UserGormRepository) Update(ctx context.Context, user *entity.User) error {
+	dbModel := mapper.UserEntityToGORM(user)
+
+	result := r.db.WithContext(ctx).Model(&model.UserModel{}).Where("id = ?", user.ID).Updates(map[string]interface{}{
+		"username":   dbModel.Username,
+		"avatar_url": dbModel.AvatarURL,
+	})
+	
+	if result.Error != nil {
+		return result.Error
+	}
+	
+	return nil
+}
