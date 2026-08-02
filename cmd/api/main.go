@@ -72,7 +72,7 @@ func main() {
 		})
 	})
 
-	identityHTTP.RegisterRoutes(router, db, cfg.JWTSecret)
+	identityHTTP.RegisterRoutes(router, db, cfg.JWTSecret, cfg.CloudinaryURL)
 	leagueHTTP.RegisterRoutes(router, db, cfg.JWTSecret)
 
 	log.Printf("Servidor corriendo en el puerto %s", cfg.Port)

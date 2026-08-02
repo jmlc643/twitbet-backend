@@ -11,8 +11,9 @@ type Config struct {
 	Port        string
 	DatabaseURL string
 	RedisURL    string
-	JWTSecret   string
-	FrontendURL string
+	JWTSecret     string
+	FrontendURL   string
+	CloudinaryURL string
 }
 
 func LoadConfig() *Config {
@@ -24,8 +25,9 @@ func LoadConfig() *Config {
 		Port:        getEnv("PORT", "8080"),
 		DatabaseURL: getEnv("DATABASE_URL", ""),
 		RedisURL:    getEnv("REDIS_URL", ""),
-		JWTSecret:   getEnv("JWT_SECRET", "default_secret"),
-		FrontendURL: getEnv("FRONTEND_URL", "http://localhost:5173"),
+		JWTSecret:     getEnv("JWT_SECRET", "default_secret"),
+		FrontendURL:   getEnv("FRONTEND_URL", "http://localhost:5173"),
+		CloudinaryURL: getEnv("CLOUDINARY_URL", ""),
 	}
 
 	if cfg.DatabaseURL == "" {

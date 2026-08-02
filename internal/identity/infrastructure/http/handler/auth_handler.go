@@ -16,6 +16,7 @@ type AuthHandler struct {
 	loginUC         *usecase.LoginUseCase
 	getProfileUC    *usecase.GetProfileUseCase
 	updateProfileUC *usecase.UpdateProfileUseCase
+	uploadAvatarUC  *usecase.UploadAvatarUseCase
 }
 
 func NewAuthHandler(
@@ -23,12 +24,14 @@ func NewAuthHandler(
 	loginUC *usecase.LoginUseCase,
 	getProfileUC *usecase.GetProfileUseCase,
 	updateProfileUC *usecase.UpdateProfileUseCase,
+	uploadAvatarUC *usecase.UploadAvatarUseCase,
 ) *AuthHandler {
 	return &AuthHandler{
 		registerUC:      registerUC,
 		loginUC:         loginUC,
 		getProfileUC:    getProfileUC,
 		updateProfileUC: updateProfileUC,
+		uploadAvatarUC:  uploadAvatarUC,
 	}
 }
 
@@ -109,3 +112,25 @@ func (h *AuthHandler) UpdateProfile(c *gin.Context) {
 	c.Status(http.StatusNoContent)
 }
 
+func (h *AuthHandler) UploadAvatar(c *gin.Context) {
+	userID, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "no autorizado"})
+		return
+	}
+
+	file, header, err := c.Request.FormFile("avatar")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "se requiere un archivo de imagen en el campo 'avatar'"})
+		return
+	}
+	defer file.Close()
+
+	avatarURL, err := h.uploadAvatarUC.Execute(c.Request.Context(), userID.(string), file, header.Filename)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"avatar_url": avatarURL})
+}
