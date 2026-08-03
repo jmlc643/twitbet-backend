@@ -227,3 +227,22 @@ func (r *LeagueRepository) GetParticipantsByLeagueID(ctx context.Context, id uui
 	return rankings, nil
 }
 
+func (r *LeagueRepository) DeleteLeague(ctx context.Context, id uuid.UUID) error {
+	tx := r.db.WithContext(ctx).Begin()
+	if tx.Error != nil {
+		return tx.Error
+	}
+	defer tx.Rollback()
+
+	if err := tx.Where("league_id = ?", id.String()).Delete(&model.TransactionModel{}).Error; err != nil {
+		return err
+	}
+	if err := tx.Where("league_id = ?", id.String()).Delete(&model.ParticipantModel{}).Error; err != nil {
+		return err
+	}
+	if err := tx.Where("id = ?", id.String()).Delete(&model.LeagueModel{}).Error; err != nil {
+		return err
+	}
+
+	return tx.Commit().Error
+}
