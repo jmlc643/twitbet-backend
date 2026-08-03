@@ -20,7 +20,8 @@ func RegisterRoutes(router *gin.Engine, db *gorm.DB, jwtSecret string) {
 	joinLeagueUC := usecase.NewJoinLeagueUseCase(leagueRepo)
 	getUserLeaguesUC := usecase.NewGetUserLeaguesUseCase(leagueRepo)
 	getLeagueDetailsUC := usecase.NewGetLeagueDetailsUseCase(leagueRepo)
-	updateLeagueSettingsUC := usecase.NewUpdateLeagueSettingsUseCase(leagueRepo)
+	updateLeagueUC := usecase.NewUpdateLeagueUseCase(leagueRepo)
+	deleteLeagueUC := usecase.NewDeleteLeagueUseCase(leagueRepo)
 
 	// Handlers
 	leagueHandler := handler.NewLeagueHandler(
@@ -28,7 +29,8 @@ func RegisterRoutes(router *gin.Engine, db *gorm.DB, jwtSecret string) {
 		joinLeagueUC,
 		getUserLeaguesUC,
 		getLeagueDetailsUC,
-		updateLeagueSettingsUC,
+		updateLeagueUC,
+		deleteLeagueUC,
 	)
 
 	tokenService := identityAdapter.NewJWTTokenService(jwtSecret)
@@ -43,7 +45,8 @@ func RegisterRoutes(router *gin.Engine, db *gorm.DB, jwtSecret string) {
 			leagueRoutes.POST("", leagueHandler.CreateLeague)
 			leagueRoutes.POST("/join", leagueHandler.JoinLeague)
 			leagueRoutes.GET("/:id", leagueHandler.GetLeagueDetails)
-			leagueRoutes.PATCH("/:id/settings", leagueHandler.UpdateLeagueSettings)
+			leagueRoutes.PUT("/:id", leagueHandler.UpdateLeague)
+			leagueRoutes.DELETE("/:id", leagueHandler.DeleteLeague)
 		}
 	}
 }

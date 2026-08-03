@@ -12,11 +12,12 @@ import (
 )
 
 type LeagueHandler struct {
-	createLeagueUC         *usecase.CreateLeagueUseCase
-	joinLeagueUC           *usecase.JoinLeagueUseCase
-	getUserLeaguesUC       *usecase.GetUserLeaguesUseCase
-	getLeagueDetailsUC     *usecase.GetLeagueDetailsUseCase
-	updateLeagueSettingsUC *usecase.UpdateLeagueSettingsUseCase
+	createLeagueUC     *usecase.CreateLeagueUseCase
+	joinLeagueUC       *usecase.JoinLeagueUseCase
+	getUserLeaguesUC   *usecase.GetUserLeaguesUseCase
+	getLeagueDetailsUC *usecase.GetLeagueDetailsUseCase
+	updateLeagueUC     *usecase.UpdateLeagueUseCase
+	deleteLeagueUC     *usecase.DeleteLeagueUseCase
 }
 
 func NewLeagueHandler(
@@ -24,14 +25,16 @@ func NewLeagueHandler(
 	joinLeagueUC *usecase.JoinLeagueUseCase,
 	getUserLeaguesUC *usecase.GetUserLeaguesUseCase,
 	getLeagueDetailsUC *usecase.GetLeagueDetailsUseCase,
-	updateLeagueSettingsUC *usecase.UpdateLeagueSettingsUseCase,
+	updateLeagueUC *usecase.UpdateLeagueUseCase,
+	deleteLeagueUC *usecase.DeleteLeagueUseCase,
 ) *LeagueHandler {
 	return &LeagueHandler{
-		createLeagueUC:         createLeagueUC,
-		joinLeagueUC:           joinLeagueUC,
-		getUserLeaguesUC:       getUserLeaguesUC,
-		getLeagueDetailsUC:     getLeagueDetailsUC,
-		updateLeagueSettingsUC: updateLeagueSettingsUC,
+		createLeagueUC:     createLeagueUC,
+		joinLeagueUC:       joinLeagueUC,
+		getUserLeaguesUC:   getUserLeaguesUC,
+		getLeagueDetailsUC: getLeagueDetailsUC,
+		updateLeagueUC:     updateLeagueUC,
+		deleteLeagueUC:     deleteLeagueUC,
 	}
 }
 
@@ -157,7 +160,7 @@ func (h *LeagueHandler) GetLeagueDetails(c *gin.Context) {
 	c.JSON(http.StatusOK, mapper.GetLeagueDetailsOutputToResponse(output))
 }
 
-func (h *LeagueHandler) UpdateLeagueSettings(c *gin.Context) {
+func (h *LeagueHandler) UpdateLeague(c *gin.Context) {
 	userIDStr, exists := c.Get("userID")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "no autorizado"})
@@ -177,25 +180,28 @@ func (h *LeagueHandler) UpdateLeagueSettings(c *gin.Context) {
 		return
 	}
 
-	var req request.UpdateLeagueSettingsRequest
+	var req request.UpdateLeagueRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	in := input.UpdateLeagueSettingsInput{
-		LeagueID:         leagueID,
-		AdminID:          adminID,
-		IsRankingVisible: req.IsRankingVisible,
+	in := input.UpdateLeagueInput{
+		LeagueID:       leagueID,
+		AdminID:        adminID,
+		Name:           req.Name,
+		InitialBalance: req.InitialBalance,
+		MaxRecharges:   req.MaxRecharges,
+		HideStandings:  req.HideStandings,
 	}
 
-	err = h.updateLeagueSettingsUC.Execute(c.Request.Context(), in)
+	err = h.updateLeagueUC.Execute(c.Request.Context(), in)
 	if err != nil {
 		if err.Error() == "liga no encontrada" {
 			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 			return
 		}
-		if err.Error() == "solo el administrador puede modificar los ajustes de la liga" {
+		if err.Error() == "solo el administrador puede modificar la liga" {
 			c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
 			return
 		}
@@ -203,5 +209,47 @@ func (h *LeagueHandler) UpdateLeagueSettings(c *gin.Context) {
 		return
 	}
 
-	c.Status(http.StatusOK)
+	c.Status(http.StatusNoContent)
+}
+
+func (h *LeagueHandler) DeleteLeague(c *gin.Context) {
+	userIDStr, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "no autorizado"})
+		return
+	}
+
+	adminID, err := uuid.Parse(userIDStr.(string))
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "id de usuario inválido"})
+		return
+	}
+
+	leagueIDStr := c.Param("id")
+	leagueID, err := uuid.Parse(leagueIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "id de liga inválido"})
+		return
+	}
+
+	in := input.DeleteLeagueInput{
+		LeagueID: leagueID,
+		AdminID:  adminID,
+	}
+
+	err = h.deleteLeagueUC.Execute(c.Request.Context(), in)
+	if err != nil {
+		if err.Error() == "liga no encontrada" {
+			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+			return
+		}
+		if err.Error() == "solo el administrador puede eliminar la liga" {
+			c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.Status(http.StatusNoContent)
 }
