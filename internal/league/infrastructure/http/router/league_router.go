@@ -27,6 +27,9 @@ func RegisterRoutes(router *gin.Engine, db *gorm.DB, jwtSecret string) {
 	// Casos de uso de Partido y Mercado
 	createMatchUC := usecase.NewCreateMatchUseCase(leagueRepo, matchRepo)
 	createMarketUC := usecase.NewCreateMarketUseCase(leagueRepo, matchRepo)
+	getLeagueMatchesUC := usecase.NewGetLeagueMatchesUseCase(matchRepo)
+	getLeagueMarketsUC := usecase.NewGetLeagueMarketsUseCase(matchRepo)
+	getMatchMarketsUC := usecase.NewGetMatchMarketsUseCase(matchRepo)
 
 	// Handlers
 	leagueHandler := handler.NewLeagueHandler(
@@ -37,7 +40,13 @@ func RegisterRoutes(router *gin.Engine, db *gorm.DB, jwtSecret string) {
 		updateLeagueUC,
 		deleteLeagueUC,
 	)
-	matchHandler := handler.NewMatchHandler(createMatchUC, createMarketUC)
+	matchHandler := handler.NewMatchHandler(
+		createMatchUC,
+		createMarketUC,
+		getLeagueMatchesUC,
+		getLeagueMarketsUC,
+		getMatchMarketsUC,
+	)
 
 	tokenService := identityAdapter.NewJWTTokenService(jwtSecret)
 	authMiddleware := identityMiddleware.JWTMiddleware(tokenService)
@@ -55,13 +64,17 @@ func RegisterRoutes(router *gin.Engine, db *gorm.DB, jwtSecret string) {
 			leagueRoutes.DELETE("/:id", leagueHandler.DeleteLeague)
 
 			leagueRoutes.POST("/:id/matches", matchHandler.CreateMatch)
+			leagueRoutes.GET("/:id/matches", matchHandler.GetMatches)
+
 			leagueRoutes.POST("/:id/markets", matchHandler.CreateMarketForLeague)
+			leagueRoutes.GET("/:id/markets", matchHandler.GetLeagueMarkets)
 		}
 
 		matchRoutes := api.Group("/matches")
 		matchRoutes.Use(authMiddleware)
 		{
 			matchRoutes.POST("/:id/markets", matchHandler.CreateMarketForMatch)
+			matchRoutes.GET("/:id/markets", matchHandler.GetMatchMarkets)
 		}
 	}
 }
