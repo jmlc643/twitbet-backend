@@ -14,14 +14,22 @@ import (
 
 func RegisterRoutes(router *gin.Engine, db *gorm.DB, jwtSecret string) {
 	leagueRepo := postgres.NewLeagueRepository(db)
+	matchRepo := postgres.NewMatchRepository(db)
 
-	// Casos de uso
+	// Casos de uso de Liga
 	createLeagueUC := usecase.NewCreateLeagueUseCase(leagueRepo)
 	joinLeagueUC := usecase.NewJoinLeagueUseCase(leagueRepo)
 	getUserLeaguesUC := usecase.NewGetUserLeaguesUseCase(leagueRepo)
 	getLeagueDetailsUC := usecase.NewGetLeagueDetailsUseCase(leagueRepo)
 	updateLeagueUC := usecase.NewUpdateLeagueUseCase(leagueRepo)
 	deleteLeagueUC := usecase.NewDeleteLeagueUseCase(leagueRepo)
+
+	// Casos de uso de Partido y Mercado
+	createMatchUC := usecase.NewCreateMatchUseCase(leagueRepo, matchRepo)
+	createMarketUC := usecase.NewCreateMarketUseCase(leagueRepo, matchRepo)
+	getLeagueMatchesUC := usecase.NewGetLeagueMatchesUseCase(matchRepo)
+	getLeagueMarketsUC := usecase.NewGetLeagueMarketsUseCase(matchRepo)
+	getMatchMarketsUC := usecase.NewGetMatchMarketsUseCase(matchRepo)
 
 	// Handlers
 	leagueHandler := handler.NewLeagueHandler(
@@ -31,6 +39,13 @@ func RegisterRoutes(router *gin.Engine, db *gorm.DB, jwtSecret string) {
 		getLeagueDetailsUC,
 		updateLeagueUC,
 		deleteLeagueUC,
+	)
+	matchHandler := handler.NewMatchHandler(
+		createMatchUC,
+		createMarketUC,
+		getLeagueMatchesUC,
+		getLeagueMarketsUC,
+		getMatchMarketsUC,
 	)
 
 	tokenService := identityAdapter.NewJWTTokenService(jwtSecret)
@@ -47,6 +62,19 @@ func RegisterRoutes(router *gin.Engine, db *gorm.DB, jwtSecret string) {
 			leagueRoutes.GET("/:id", leagueHandler.GetLeagueDetails)
 			leagueRoutes.PUT("/:id", leagueHandler.UpdateLeague)
 			leagueRoutes.DELETE("/:id", leagueHandler.DeleteLeague)
+
+			leagueRoutes.POST("/:id/matches", matchHandler.CreateMatch)
+			leagueRoutes.GET("/:id/matches", matchHandler.GetMatches)
+
+			leagueRoutes.POST("/:id/markets", matchHandler.CreateMarketForLeague)
+			leagueRoutes.GET("/:id/markets", matchHandler.GetLeagueMarkets)
+		}
+
+		matchRoutes := api.Group("/matches")
+		matchRoutes.Use(authMiddleware)
+		{
+			matchRoutes.POST("/:id/markets", matchHandler.CreateMarketForMatch)
+			matchRoutes.GET("/:id/markets", matchHandler.GetMatchMarkets)
 		}
 	}
 }
