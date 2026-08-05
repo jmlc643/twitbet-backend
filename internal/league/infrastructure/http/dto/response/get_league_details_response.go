@@ -7,6 +7,7 @@ type ParticipantRankingResponse struct {
 	ProfilePicture *string `json:"profile_picture"`
 	Balance        float64 `json:"balance"`
 	Position       int     `json:"position"`
+	Role           string  `json:"role"`
 }
 
 type GetLeagueDetailsResponse struct {

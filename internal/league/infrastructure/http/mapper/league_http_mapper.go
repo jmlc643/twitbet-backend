@@ -67,6 +67,7 @@ func GetLeagueDetailsOutputToResponse(out output.GetLeagueDetailsOutput) respons
 			ProfilePicture: p.ProfilePicture,
 			Balance:        p.Balance,
 			Position:       p.Position,
+			Role:           p.Role,
 		})
 	}
 	return response.GetLeagueDetailsResponse{

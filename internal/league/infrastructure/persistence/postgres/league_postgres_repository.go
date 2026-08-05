@@ -220,6 +220,8 @@ func (r *LeagueRepository) GetParticipantsByLeagueID(ctx context.Context, id uui
 		AvatarURL     *string
 		Balance       float64
 		Position      int
+		IsAdmin       bool
+		OwnerID       string
 	}
 
 	query := `
@@ -229,9 +231,12 @@ func (r *LeagueRepository) GetParticipantsByLeagueID(ctx context.Context, id uui
 			u.username,
 			u.avatar_url,
 			p.balance,
-			RANK() OVER (ORDER BY p.balance DESC) as position
+			RANK() OVER (ORDER BY p.balance DESC) as position,
+			p.is_admin,
+			l.owner_id
 		FROM league_participants p
 		JOIN users u ON p.user_id = u.id
+		JOIN leagues l ON p.league_id = l.id
 		WHERE p.league_id = ?
 		ORDER BY p.balance DESC
 	`
@@ -246,6 +251,14 @@ func (r *LeagueRepository) GetParticipantsByLeagueID(ctx context.Context, id uui
 		participantID, _ := uuid.Parse(res.ParticipantID)
 		userID, _ := uuid.Parse(res.UserID)
 
+		role := "MEMBER"
+		if res.IsAdmin {
+			role = "ADMIN"
+		}
+		if res.UserID == res.OwnerID {
+			role = "OWNER"
+		}
+
 		rankings = append(rankings, entity.ParticipantRanking{
 			ParticipantID:  participantID,
 			UserID:         userID,
@@ -253,6 +266,7 @@ func (r *LeagueRepository) GetParticipantsByLeagueID(ctx context.Context, id uui
 			ProfilePicture: res.AvatarURL,
 			Balance:        res.Balance,
 			Position:       res.Position,
+			Role:           role,
 		})
 	}
 

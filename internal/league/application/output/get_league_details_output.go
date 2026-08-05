@@ -6,12 +6,13 @@ import (
 )
 
 type ParticipantRankingOutput struct {
-	ParticipantID uuid.UUID
-	UserID        uuid.UUID
-	Username      string
+	ParticipantID  uuid.UUID
+	UserID         uuid.UUID
+	Username       string
 	ProfilePicture *string
-	Balance       float64
-	Position      int
+	Balance        float64
+	Position       int
+	Role           string
 }
 
 type GetLeagueDetailsOutput struct {
@@ -37,6 +38,7 @@ func EntityToParticipantRankingOutput(rankings []entity.ParticipantRanking) []Pa
 			ProfilePicture: r.ProfilePicture,
 			Balance:        r.Balance,
 			Position:       r.Position,
+			Role:           r.Role,
 		})
 	}
 	return output

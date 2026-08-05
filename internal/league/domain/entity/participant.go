@@ -23,6 +23,7 @@ type ParticipantRanking struct {
 	ProfilePicture *string
 	Balance       float64
 	Position      int
+	Role          string
 }
 
 func NewParticipant(leagueID, userID uuid.UUID, balance float64, isAdmin bool) (*Participant, error) {
