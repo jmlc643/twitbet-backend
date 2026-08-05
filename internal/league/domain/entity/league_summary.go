@@ -11,6 +11,7 @@ const (
 
 type LeagueSummary struct {
 	LeagueID         uuid.UUID
+	Slug             string
 	Name             string
 	Role             LeagueRole
 	ParticipantCount int

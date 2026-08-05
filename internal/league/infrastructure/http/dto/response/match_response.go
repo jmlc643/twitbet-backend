@@ -9,6 +9,7 @@ import (
 type MatchResponse struct {
 	ID        string    `json:"id"`
 	LeagueID  string    `json:"league_id"`
+	Slug      string    `json:"slug"`
 	Title     string    `json:"title"`
 	StartTime time.Time `json:"start_time"`
 	Status    string    `json:"status"`
@@ -20,6 +21,7 @@ func NewMatchResponse(match *entity.Match) MatchResponse {
 	return MatchResponse{
 		ID:        match.ID.String(),
 		LeagueID:  match.LeagueID.String(),
+		Slug:      match.Slug,
 		Title:     match.Title,
 		StartTime: match.StartTime,
 		Status:    match.Status,

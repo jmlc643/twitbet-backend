@@ -1,8 +1,6 @@
 package output
 
 import (
-	"time"
-
 	"github.com/google/uuid"
 	"github.com/jmlc643/twitbet-backend/internal/league/domain/entity"
 )
@@ -18,13 +16,14 @@ type ParticipantRankingOutput struct {
 
 type GetLeagueDetailsOutput struct {
 	LeagueID         uuid.UUID
+	Slug             string
 	Name             string
-	AdminID          uuid.UUID
+	OwnerID          uuid.UUID
 	InitialBalance   float64
 	MaxRecharges     int
 	IsRankingVisible bool
 	InviteCode       string
-	CreatedAt        time.Time
+	CreatedAt        string
 	Participants     []ParticipantRankingOutput
 }
 

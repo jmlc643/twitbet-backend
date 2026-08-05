@@ -55,13 +55,14 @@ func (r *LeagueRepository) GetLeagueByInviteCode(ctx context.Context, code strin
 		return nil, err
 	}
 
-	adminID, _ := uuid.Parse(modelLeague.AdminID)
+	OwnerID, _ := uuid.Parse(modelLeague.OwnerID)
 	id, _ := uuid.Parse(modelLeague.ID)
 
 	return &entity.League{
 		ID:             id,
-		AdminID:        adminID,
+		OwnerID:        OwnerID,
 		Name:           modelLeague.Name,
+		Slug:           modelLeague.Slug,
 		InitialBalance: modelLeague.InitialBalance,
 		MaxRecharges:   modelLeague.MaxRecharges,
 		HideStandings:  modelLeague.HideStandings,
@@ -74,8 +75,9 @@ func (r *LeagueRepository) GetLeagueByInviteCode(ctx context.Context, code strin
 func (r *LeagueRepository) GetUserLeagues(ctx context.Context, userID uuid.UUID) ([]entity.LeagueSummary, error) {
 	var results []struct {
 		LeagueID         string
+		Slug             string
 		Name             string
-		AdminID          string
+		OwnerID          string
 		Balance          float64
 		ParticipantCount int
 	}
@@ -83,8 +85,9 @@ func (r *LeagueRepository) GetUserLeagues(ctx context.Context, userID uuid.UUID)
 	query := `
 		SELECT 
 			l.id as league_id, 
+			l.slug,
 			l.name, 
-			l.admin_id, 
+			l.owner_id, 
 			p.balance, 
 			(SELECT COUNT(*) FROM league_participants p2 WHERE p2.league_id = l.id) as participant_count
 		FROM leagues l
@@ -100,7 +103,7 @@ func (r *LeagueRepository) GetUserLeagues(ctx context.Context, userID uuid.UUID)
 	var summaries []entity.LeagueSummary
 	for _, res := range results {
 		role := entity.RoleMember
-		if res.AdminID == userID.String() {
+		if res.OwnerID == userID.String() {
 			role = entity.RoleAdmin
 		}
 
@@ -108,6 +111,7 @@ func (r *LeagueRepository) GetUserLeagues(ctx context.Context, userID uuid.UUID)
 
 		summaries = append(summaries, entity.LeagueSummary{
 			LeagueID:         leagueUUID,
+			Slug:             res.Slug,
 			Name:             res.Name,
 			Role:             role,
 			ParticipantCount: res.ParticipantCount,
@@ -159,13 +163,41 @@ func (r *LeagueRepository) GetLeagueByID(ctx context.Context, id uuid.UUID) (*en
 		return nil, err
 	}
 
-	adminID, _ := uuid.Parse(modelLeague.AdminID)
+	OwnerID, _ := uuid.Parse(modelLeague.OwnerID)
 	leagueID, _ := uuid.Parse(modelLeague.ID)
 
 	return &entity.League{
 		ID:             leagueID,
-		AdminID:        adminID,
+		OwnerID:        OwnerID,
 		Name:           modelLeague.Name,
+		Slug:           modelLeague.Slug,
+		InitialBalance: modelLeague.InitialBalance,
+		MaxRecharges:   modelLeague.MaxRecharges,
+		HideStandings:  modelLeague.HideStandings,
+		InviteCode:     modelLeague.InviteCode,
+		CreatedAt:      modelLeague.CreatedAt,
+		UpdatedAt:      modelLeague.UpdatedAt,
+	}, nil
+}
+
+func (r *LeagueRepository) GetLeagueBySlug(ctx context.Context, slug string) (*entity.League, error) {
+	var modelLeague model.LeagueModel
+	err := r.db.WithContext(ctx).Where("slug = ?", slug).First(&modelLeague).Error
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	OwnerID, _ := uuid.Parse(modelLeague.OwnerID)
+	leagueID, _ := uuid.Parse(modelLeague.ID)
+
+	return &entity.League{
+		ID:             leagueID,
+		OwnerID:        OwnerID,
+		Name:           modelLeague.Name,
+		Slug:           modelLeague.Slug,
 		InitialBalance: modelLeague.InitialBalance,
 		MaxRecharges:   modelLeague.MaxRecharges,
 		HideStandings:  modelLeague.HideStandings,
@@ -245,4 +277,30 @@ func (r *LeagueRepository) DeleteLeague(ctx context.Context, id uuid.UUID) error
 	}
 
 	return tx.Commit().Error
+}
+
+func (r *LeagueRepository) GetParticipant(ctx context.Context, leagueID, userID uuid.UUID) (*entity.Participant, error) {
+	var pModel model.ParticipantModel
+	err := r.db.WithContext(ctx).Where("league_id = ? AND user_id = ?", leagueID.String(), userID.String()).First(&pModel).Error
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, nil
+		}
+		return nil, err
+	}
+	pID, _ := uuid.Parse(pModel.ID)
+	return &entity.Participant{
+		ID:                pID,
+		LeagueID:          leagueID,
+		UserID:            userID,
+		IsAdmin:           pModel.IsAdmin,
+		Balance:           pModel.Balance,
+		RechargesConsumed: pModel.RechargesConsumed,
+		JoinedAt:          pModel.JoinedAt,
+	}, nil
+}
+
+func (r *LeagueRepository) UpdateParticipant(ctx context.Context, p *entity.Participant) error {
+	pModel := mapper.EntityToParticipantModel(p)
+	return r.db.WithContext(ctx).Save(pModel).Error
 }

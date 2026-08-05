@@ -8,9 +8,9 @@ import (
 	"github.com/jmlc643/twitbet-backend/internal/league/infrastructure/http/dto/response"
 )
 
-func CreateLeagueRequestToInput(req request.CreateLeagueRequest, adminID uuid.UUID) input.CreateLeagueInput {
+func CreateLeagueRequestToInput(req request.CreateLeagueRequest, OwnerID uuid.UUID) input.CreateLeagueInput {
 	return input.CreateLeagueInput{
-		AdminID:        adminID,
+		OwnerID:        OwnerID,
 		Name:           req.Name,
 		InitialBalance: req.InitialBalance,
 		MaxRecharges:   req.MaxRecharges,
@@ -45,6 +45,7 @@ func GetUserLeaguesOutputToResponse(out *output.GetUserLeaguesOutput) response.G
 	for _, l := range out.Leagues {
 		leagues = append(leagues, response.LeagueSummaryResponse{
 			LeagueID:         l.LeagueID.String(),
+			Slug:             l.Slug,
 			Name:             l.Name,
 			Role:             string(l.Role),
 			ParticipantCount: l.ParticipantCount,
@@ -70,8 +71,9 @@ func GetLeagueDetailsOutputToResponse(out output.GetLeagueDetailsOutput) respons
 	}
 	return response.GetLeagueDetailsResponse{
 		LeagueID:         out.LeagueID.String(),
+		Slug:             out.Slug,
 		Name:             out.Name,
-		AdminID:          out.AdminID.String(),
+		OwnerID:          out.OwnerID.String(),
 		InitialBalance:   out.InitialBalance,
 		MaxRecharges:     out.MaxRecharges,
 		IsRankingVisible: out.IsRankingVisible,

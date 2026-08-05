@@ -37,7 +37,7 @@ func (uc *JoinLeagueUseCase) Execute(ctx context.Context, in input.JoinLeagueInp
 		return nil, apperror.ErrUserAlreadyJoined
 	}
 
-	participant, err := entity.NewParticipant(league.ID, in.UserID, league.InitialBalance)
+	participant, err := entity.NewParticipant(league.ID, in.UserID, league.InitialBalance, false)
 	if err != nil {
 		return nil, err
 	}
