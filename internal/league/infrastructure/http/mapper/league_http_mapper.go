@@ -21,6 +21,7 @@ func CreateLeagueRequestToInput(req request.CreateLeagueRequest, OwnerID uuid.UU
 func CreateLeagueOutputToResponse(out *output.CreateLeagueOutput) response.CreateLeagueResponse {
 	return response.CreateLeagueResponse{
 		ID:         out.ID.String(),
+		Slug:       out.Slug,
 		InviteCode: out.InviteCode,
 	}
 }
@@ -36,6 +37,7 @@ func JoinLeagueOutputToResponse(out *output.JoinLeagueOutput) response.JoinLeagu
 	return response.JoinLeagueResponse{
 		LeagueID:   out.LeagueID.String(),
 		LeagueName: out.LeagueName,
+		Slug:       out.Slug,
 		Balance:    out.Balance,
 	}
 }

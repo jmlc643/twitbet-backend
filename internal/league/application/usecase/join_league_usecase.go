@@ -55,6 +55,7 @@ func (uc *JoinLeagueUseCase) Execute(ctx context.Context, in input.JoinLeagueInp
 	return &output.JoinLeagueOutput{
 		LeagueID:   league.ID,
 		LeagueName: league.Name,
+		Slug:       league.Slug,
 		Balance:    league.InitialBalance,
 	}, nil
 }

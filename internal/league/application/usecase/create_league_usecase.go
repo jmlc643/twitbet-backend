@@ -40,6 +40,7 @@ func (uc *CreateLeagueUseCase) Execute(ctx context.Context, in input.CreateLeagu
 
 	return &output.CreateLeagueOutput{
 		ID:         league.ID,
+		Slug:       league.Slug,
 		InviteCode: league.InviteCode,
 	}, nil
 }
