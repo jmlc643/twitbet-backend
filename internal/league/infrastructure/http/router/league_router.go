@@ -2,19 +2,22 @@ package router
 
 import (
 	"github.com/gin-gonic/gin"
+	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 
 	"github.com/jmlc643/twitbet-backend/internal/league/application/usecase"
 	"github.com/jmlc643/twitbet-backend/internal/league/infrastructure/http/handler"
 	"github.com/jmlc643/twitbet-backend/internal/league/infrastructure/persistence/postgres"
+	leagueRedis "github.com/jmlc643/twitbet-backend/internal/league/infrastructure/redis"
 
 	identityAdapter "github.com/jmlc643/twitbet-backend/internal/identity/infrastructure/adapter"
 	identityMiddleware "github.com/jmlc643/twitbet-backend/internal/identity/infrastructure/http/middleware"
 )
 
-func RegisterRoutes(router *gin.Engine, db *gorm.DB, jwtSecret string) {
+func RegisterRoutes(router *gin.Engine, db *gorm.DB, rdb *redis.Client, jwtSecret string) {
 	leagueRepo := postgres.NewLeagueRepository(db)
 	matchRepo := postgres.NewMatchRepository(db)
+	marketPublisher := leagueRedis.NewMarketPublisher(rdb)
 
 	// Casos de uso de Liga
 	createLeagueUC := usecase.NewCreateLeagueUseCase(leagueRepo)
@@ -30,6 +33,9 @@ func RegisterRoutes(router *gin.Engine, db *gorm.DB, jwtSecret string) {
 	getLeagueMatchesUC := usecase.NewGetLeagueMatchesUseCase(matchRepo)
 	getLeagueMarketsUC := usecase.NewGetLeagueMarketsUseCase(matchRepo)
 	getMatchMarketsUC := usecase.NewGetMatchMarketsUseCase(matchRepo)
+	
+	updateMarketStatusUC := usecase.NewUpdateMarketStatusUseCase(matchRepo, leagueRepo, marketPublisher)
+	updateMarketOddsUC := usecase.NewUpdateMarketOddsUseCase(matchRepo, leagueRepo, marketPublisher)
 
 	// Handlers
 	leagueHandler := handler.NewLeagueHandler(
@@ -46,6 +52,10 @@ func RegisterRoutes(router *gin.Engine, db *gorm.DB, jwtSecret string) {
 		getLeagueMatchesUC,
 		getLeagueMarketsUC,
 		getMatchMarketsUC,
+	)
+	marketLiveHandler := handler.NewMarketLiveHandler(
+		*updateMarketStatusUC,
+		*updateMarketOddsUC,
 	)
 
 	tokenService := identityAdapter.NewJWTTokenService(jwtSecret)
@@ -75,6 +85,13 @@ func RegisterRoutes(router *gin.Engine, db *gorm.DB, jwtSecret string) {
 		{
 			matchRoutes.POST("/:id/markets", matchHandler.CreateMarketForMatch)
 			matchRoutes.GET("/:id/markets", matchHandler.GetMatchMarkets)
+		}
+
+		marketRoutes := api.Group("/markets")
+		marketRoutes.Use(authMiddleware)
+		{
+			marketRoutes.PATCH("/:id/status", marketLiveHandler.UpdateStatus)
+			marketRoutes.PATCH("/:id/odds", marketLiveHandler.UpdateOdds)
 		}
 	}
 }

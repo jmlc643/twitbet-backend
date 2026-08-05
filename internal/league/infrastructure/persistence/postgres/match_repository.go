@@ -138,6 +138,55 @@ func (r *matchRepository) GetMarketsByMatchID(ctx context.Context, matchID uuid.
 	return mapDBMarketsToEntity(dbMarkets), nil
 }
 
+func (r *matchRepository) GetMarketByID(ctx context.Context, id uuid.UUID) (*entity.Market, error) {
+	var dbMarket model.MarketModel
+	if err := r.db.WithContext(ctx).Preload("Options").First(&dbMarket, "id = ?", id.String()).Error; err != nil {
+		return nil, err
+	}
+	markets := mapDBMarketsToEntity([]model.MarketModel{dbMarket})
+	if len(markets) == 0 {
+		return nil, gorm.ErrRecordNotFound
+	}
+	return &markets[0], nil
+}
+
+func (r *matchRepository) UpdateMarket(ctx context.Context, market *entity.Market) error {
+	var matchID *string
+	if market.MatchID != nil {
+		idStr := market.MatchID.String()
+		matchID = &idStr
+	}
+
+	dbMarket := &model.MarketModel{
+		ID:        market.ID.String(),
+		LeagueID:  market.LeagueID.String(),
+		MatchID:   matchID,
+		Name:      market.Name,
+		Status:    market.Status,
+		CreatedAt: market.CreatedAt,
+		UpdatedAt: market.UpdatedAt,
+	}
+
+	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if err := tx.Save(dbMarket).Error; err != nil {
+			return err
+		}
+		for _, opt := range market.Options {
+			dbOpt := &model.MarketOptionModel{
+				ID:          opt.ID.String(),
+				MarketID:    market.ID.String(),
+				Name:        opt.Name,
+				InitialOdds: opt.InitialOdds,
+				CurrentOdds: opt.CurrentOdds,
+			}
+			if err := tx.Save(dbOpt).Error; err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+}
+
 func mapDBMarketsToEntity(dbMarkets []model.MarketModel) []entity.Market {
 	markets := make([]entity.Market, 0, len(dbMarkets))
 	for _, m := range dbMarkets {

@@ -18,6 +18,7 @@ import (
 	"github.com/jmlc643/twitbet-backend/internal/platform/database"
 	"github.com/jmlc643/twitbet-backend/internal/platform/http/middleware"
 	"github.com/jmlc643/twitbet-backend/internal/platform/redis"
+	"github.com/jmlc643/twitbet-backend/internal/platform/websocket"
 )
 
 func main() {
@@ -36,6 +37,9 @@ func main() {
 	if err := database.AutoMigrate(db, &identityModel.UserModel{}, &leagueModel.LeagueModel{}, &leagueModel.ParticipantModel{}, &leagueModel.TransactionModel{}, &leagueModel.MatchModel{}, &leagueModel.MarketModel{}, &leagueModel.MarketOptionModel{}); err != nil {
 		log.Fatalf("Falló la migración de base de datos: %v", err)
 	}
+
+	hub := websocket.NewHub(rdb)
+	go hub.Run()
 
 	router := gin.Default()
 	router.SetTrustedProxies(nil)
@@ -71,9 +75,11 @@ func main() {
 			},
 		})
 	})
+	
+	router.GET("/ws", websocket.ServeWs(hub, cfg.JWTSecret))
 
 	identityHTTP.RegisterRoutes(router, db, cfg.JWTSecret, cfg.CloudinaryURL)
-	leagueHTTP.RegisterRoutes(router, db, cfg.JWTSecret)
+	leagueHTTP.RegisterRoutes(router, db, rdb, cfg.JWTSecret)
 
 	log.Printf("Servidor corriendo en el puerto %s", cfg.Port)
 	if err := router.Run(":" + cfg.Port); err != nil {

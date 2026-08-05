@@ -1,0 +1,57 @@
+package usecase
+
+import (
+	"context"
+	"errors"
+
+	"github.com/google/uuid"
+	"github.com/jmlc643/twitbet-backend/internal/league/domain/apperror"
+	"github.com/jmlc643/twitbet-backend/internal/league/domain/port"
+	"github.com/jmlc643/twitbet-backend/internal/league/domain/repository"
+)
+
+type UpdateMarketStatusUseCase struct {
+	matchRepo   repository.MatchRepository
+	leagueRepo  repository.LeagueRepository
+	publisher   port.MarketEventPublisher
+}
+
+func NewUpdateMarketStatusUseCase(
+	matchRepo repository.MatchRepository,
+	leagueRepo repository.LeagueRepository,
+	publisher port.MarketEventPublisher,
+) *UpdateMarketStatusUseCase {
+	return &UpdateMarketStatusUseCase{
+		matchRepo:   matchRepo,
+		leagueRepo:  leagueRepo,
+		publisher:   publisher,
+	}
+}
+
+func (u *UpdateMarketStatusUseCase) Execute(ctx context.Context, marketID uuid.UUID, adminID uuid.UUID, newStatus string) error {
+	if newStatus != "ACTIVE" && newStatus != "SUSPENDED" {
+		return apperror.ErrInvalidMarketName
+	}
+
+	market, err := u.matchRepo.GetMarketByID(ctx, marketID)
+	if err != nil {
+		return err
+	}
+
+	league, err := u.leagueRepo.GetLeagueByID(ctx, market.LeagueID)
+	if err != nil {
+		return err
+	}
+
+	if league.AdminID != adminID {
+		return errors.New("no autorizado")
+	}
+
+	market.Status = newStatus
+
+	if err := u.matchRepo.UpdateMarket(ctx, market); err != nil {
+		return err
+	}
+
+	return u.publisher.PublishMarketStatusChanged(ctx, market.ID, newStatus)
+}
