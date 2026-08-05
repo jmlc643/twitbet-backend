@@ -18,6 +18,8 @@ type LeagueHandler struct {
 	getLeagueDetailsUC *usecase.GetLeagueDetailsUseCase
 	updateLeagueUC     *usecase.UpdateLeagueUseCase
 	deleteLeagueUC     *usecase.DeleteLeagueUseCase
+	assignAdminUC      *usecase.AssignAdminUseCase
+	removeAdminUC      *usecase.RemoveAdminUseCase
 }
 
 func NewLeagueHandler(
@@ -27,6 +29,8 @@ func NewLeagueHandler(
 	getLeagueDetailsUC *usecase.GetLeagueDetailsUseCase,
 	updateLeagueUC *usecase.UpdateLeagueUseCase,
 	deleteLeagueUC *usecase.DeleteLeagueUseCase,
+	assignAdminUC *usecase.AssignAdminUseCase,
+	removeAdminUC *usecase.RemoveAdminUseCase,
 ) *LeagueHandler {
 	return &LeagueHandler{
 		createLeagueUC:     createLeagueUC,
@@ -35,6 +39,8 @@ func NewLeagueHandler(
 		getLeagueDetailsUC: getLeagueDetailsUC,
 		updateLeagueUC:     updateLeagueUC,
 		deleteLeagueUC:     deleteLeagueUC,
+		assignAdminUC:      assignAdminUC,
+		removeAdminUC:      removeAdminUC,
 	}
 }
 
@@ -45,7 +51,7 @@ func (h *LeagueHandler) CreateLeague(c *gin.Context) {
 		return
 	}
 
-	adminID, err := uuid.Parse(userIDStr.(string))
+	OwnerID, err := uuid.Parse(userIDStr.(string))
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "id de usuario inválido"})
 		return
@@ -57,7 +63,7 @@ func (h *LeagueHandler) CreateLeague(c *gin.Context) {
 		return
 	}
 
-	input := mapper.CreateLeagueRequestToInput(req, adminID)
+	input := mapper.CreateLeagueRequestToInput(req, OwnerID)
 	output, err := h.createLeagueUC.Execute(c.Request.Context(), input)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -135,16 +141,15 @@ func (h *LeagueHandler) GetLeagueDetails(c *gin.Context) {
 		return
 	}
 
-	leagueIDStr := c.Param("id")
-	leagueID, err := uuid.Parse(leagueIDStr)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "id de liga inválido"})
+	slug := c.Param("id")
+	if slug == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "slug de liga inválido"})
 		return
 	}
 
 	in := input.GetLeagueDetailsInput{
-		LeagueID: leagueID,
-		UserID:   userID,
+		Slug:   slug,
+		UserID: userID,
 	}
 
 	output, err := h.getLeagueDetailsUC.Execute(c.Request.Context(), in)
@@ -167,7 +172,7 @@ func (h *LeagueHandler) UpdateLeague(c *gin.Context) {
 		return
 	}
 
-	adminID, err := uuid.Parse(userIDStr.(string))
+	OwnerID, err := uuid.Parse(userIDStr.(string))
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "id de usuario inválido"})
 		return
@@ -188,7 +193,7 @@ func (h *LeagueHandler) UpdateLeague(c *gin.Context) {
 
 	in := input.UpdateLeagueInput{
 		LeagueID:       leagueID,
-		AdminID:        adminID,
+		OwnerID:        OwnerID,
 		Name:           req.Name,
 		InitialBalance: req.InitialBalance,
 		MaxRecharges:   req.MaxRecharges,
@@ -219,7 +224,7 @@ func (h *LeagueHandler) DeleteLeague(c *gin.Context) {
 		return
 	}
 
-	adminID, err := uuid.Parse(userIDStr.(string))
+	OwnerID, err := uuid.Parse(userIDStr.(string))
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "id de usuario inválido"})
 		return
@@ -234,7 +239,7 @@ func (h *LeagueHandler) DeleteLeague(c *gin.Context) {
 
 	in := input.DeleteLeagueInput{
 		LeagueID: leagueID,
-		AdminID:  adminID,
+		OwnerID:  OwnerID,
 	}
 
 	err = h.deleteLeagueUC.Execute(c.Request.Context(), in)

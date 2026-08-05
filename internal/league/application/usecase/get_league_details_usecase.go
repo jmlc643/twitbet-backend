@@ -18,7 +18,7 @@ func NewGetLeagueDetailsUseCase(repo repository.LeagueRepository) *GetLeagueDeta
 }
 
 func (uc *GetLeagueDetailsUseCase) Execute(ctx context.Context, in input.GetLeagueDetailsInput) (output.GetLeagueDetailsOutput, error) {
-	league, err := uc.repo.GetLeagueByID(ctx, in.LeagueID)
+	league, err := uc.repo.GetLeagueBySlug(ctx, in.Slug)
 	if err != nil {
 		return output.GetLeagueDetailsOutput{}, err
 	}
@@ -26,24 +26,25 @@ func (uc *GetLeagueDetailsUseCase) Execute(ctx context.Context, in input.GetLeag
 		return output.GetLeagueDetailsOutput{}, errors.New("liga no encontrada")
 	}
 
-	participants, err := uc.repo.GetParticipantsByLeagueID(ctx, in.LeagueID)
+	participants, err := uc.repo.GetParticipantsByLeagueID(ctx, league.ID)
 	if err != nil {
 		return output.GetLeagueDetailsOutput{}, err
 	}
 
-	if league.HideStandings && in.UserID != league.AdminID {
+	if league.HideStandings && in.UserID != league.OwnerID {
 		participants = nil
 	}
 
 	return output.GetLeagueDetailsOutput{
 		LeagueID:         league.ID,
+		Slug:             league.Slug,
 		Name:             league.Name,
-		AdminID:          league.AdminID,
+		OwnerID:          league.OwnerID,
 		InitialBalance:   league.InitialBalance,
 		MaxRecharges:     league.MaxRecharges,
 		IsRankingVisible: !league.HideStandings,
 		InviteCode:       league.InviteCode,
-		CreatedAt:        league.CreatedAt,
+		CreatedAt:        league.CreatedAt.Format("01/02/2006"),
 		Participants:     output.EntityToParticipantRankingOutput(participants),
 	}, nil
 }

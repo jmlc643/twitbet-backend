@@ -18,17 +18,17 @@ func NewCreateLeagueUseCase(repo repository.LeagueRepository) *CreateLeagueUseCa
 }
 
 func (uc *CreateLeagueUseCase) Execute(ctx context.Context, in input.CreateLeagueInput) (*output.CreateLeagueOutput, error) {
-	league, err := entity.NewLeague(in.AdminID, in.Name, in.InitialBalance, in.MaxRecharges, in.HideStandings)
+	league, err := entity.NewLeague(in.OwnerID, in.Name, in.InitialBalance, in.MaxRecharges, in.HideStandings)
 	if err != nil {
 		return nil, err
 	}
 
-	participant, err := entity.NewParticipant(league.ID, in.AdminID, in.InitialBalance)
+	participant, err := entity.NewParticipant(league.ID, in.OwnerID, in.InitialBalance, true)
 	if err != nil {
 		return nil, err
 	}
 
-	transaction, err := entity.NewTransaction(league.ID, in.AdminID, in.InitialBalance, entity.TransactionTypeInitialBalance)
+	transaction, err := entity.NewTransaction(league.ID, in.OwnerID, in.InitialBalance, entity.TransactionTypeInitialBalance)
 	if err != nil {
 		return nil, err
 	}
@@ -40,6 +40,7 @@ func (uc *CreateLeagueUseCase) Execute(ctx context.Context, in input.CreateLeagu
 
 	return &output.CreateLeagueOutput{
 		ID:         league.ID,
+		Slug:       league.Slug,
 		InviteCode: league.InviteCode,
 	}, nil
 }

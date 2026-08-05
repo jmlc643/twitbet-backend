@@ -12,8 +12,9 @@ import (
 
 type League struct {
 	ID             uuid.UUID
-	AdminID        uuid.UUID
+	OwnerID        uuid.UUID
 	Name           string
+	Slug           string
 	InitialBalance float64
 	MaxRecharges   int
 	HideStandings  bool
@@ -22,7 +23,7 @@ type League struct {
 	UpdatedAt      time.Time
 }
 
-func NewLeague(adminID uuid.UUID, name string, initialBalance float64, maxRecharges int, hideStandings bool) (*League, error) {
+func NewLeague(ownerID uuid.UUID, name string, initialBalance float64, maxRecharges int, hideStandings bool) (*League, error) {
 	if name == "" {
 		return nil, apperror.ErrInvalidLeagueName
 	}
@@ -43,8 +44,9 @@ func NewLeague(adminID uuid.UUID, name string, initialBalance float64, maxRechar
 
 	return &League{
 		ID:             uuid.New(),
-		AdminID:        adminID,
+		OwnerID:        ownerID,
 		Name:           name,
+		Slug:           generateSlug(name),
 		InitialBalance: initialBalance,
 		MaxRecharges:   maxRecharges,
 		HideStandings:  hideStandings,
@@ -60,4 +62,12 @@ func generateInviteCode(length int) (string, error) {
 		return "", err
 	}
 	return strings.ToUpper(hex.EncodeToString(bytes)), nil
+}
+
+func generateSlug(name string) string {
+	slug := strings.ToLower(name)
+	slug = strings.ReplaceAll(slug, " ", "-")
+	
+	uuidPart := uuid.New().String()[:6]
+	return slug + "-" + uuidPart
 }

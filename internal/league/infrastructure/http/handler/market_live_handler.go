@@ -22,13 +22,13 @@ func NewMarketLiveHandler(updateStatusUseCase usecase.UpdateMarketStatusUseCase,
 }
 
 func (h *MarketLiveHandler) UpdateStatus(c *gin.Context) {
-	adminIDStr, exists := c.Get("userID")
+	OwnerIDStr, exists := c.Get("userID")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "no autorizado"})
 		return
 	}
 
-	adminID, err := uuid.Parse(adminIDStr.(string))
+	OwnerID, err := uuid.Parse(OwnerIDStr.(string))
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "ID de usuario inválido"})
 		return
@@ -47,7 +47,7 @@ func (h *MarketLiveHandler) UpdateStatus(c *gin.Context) {
 		return
 	}
 
-	if err := h.updateStatusUseCase.Execute(c.Request.Context(), marketID, adminID, req.Status); err != nil {
+	if err := h.updateStatusUseCase.Execute(c.Request.Context(), marketID, OwnerID, req.Status); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -56,13 +56,13 @@ func (h *MarketLiveHandler) UpdateStatus(c *gin.Context) {
 }
 
 func (h *MarketLiveHandler) UpdateOdds(c *gin.Context) {
-	adminIDStr, exists := c.Get("userID")
+	OwnerIDStr, exists := c.Get("userID")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "no autorizado"})
 		return
 	}
 
-	adminID, err := uuid.Parse(adminIDStr.(string))
+	OwnerID, err := uuid.Parse(OwnerIDStr.(string))
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "ID de usuario inválido"})
 		return
@@ -91,7 +91,7 @@ func (h *MarketLiveHandler) UpdateOdds(c *gin.Context) {
 		parsedOdds[optID] = odds
 	}
 
-	if err := h.updateOddsUseCase.Execute(c.Request.Context(), marketID, adminID, parsedOdds); err != nil {
+	if err := h.updateOddsUseCase.Execute(c.Request.Context(), marketID, OwnerID, parsedOdds); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}

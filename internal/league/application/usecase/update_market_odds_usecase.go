@@ -27,7 +27,7 @@ func NewUpdateMarketOddsUseCase(
 	}
 }
 
-func (u *UpdateMarketOddsUseCase) Execute(ctx context.Context, marketID uuid.UUID, adminID uuid.UUID, optionsOdds map[uuid.UUID]float64) error {
+func (u *UpdateMarketOddsUseCase) Execute(ctx context.Context, marketID uuid.UUID, OwnerID uuid.UUID, optionsOdds map[uuid.UUID]float64) error {
 	market, err := u.matchRepo.GetMarketByID(ctx, marketID)
 	if err != nil {
 		return err
@@ -38,7 +38,7 @@ func (u *UpdateMarketOddsUseCase) Execute(ctx context.Context, marketID uuid.UUI
 		return err
 	}
 
-	if league.AdminID != adminID {
+	if league.OwnerID != OwnerID {
 		return errors.New("no autorizado")
 	}
 

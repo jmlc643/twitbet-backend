@@ -22,12 +22,12 @@ func NewCreateMatchUseCase(leagueRepo repository.LeagueRepository, matchRepo rep
 	}
 }
 
-func (uc *CreateMatchUseCase) Execute(ctx context.Context, adminID, leagueID uuid.UUID, title string, startTime time.Time) (*entity.Match, error) {
+func (uc *CreateMatchUseCase) Execute(ctx context.Context, OwnerID, leagueID uuid.UUID, title string, startTime time.Time) (*entity.Match, error) {
 	league, err := uc.leagueRepo.GetLeagueByID(ctx, leagueID)
 	if err != nil {
 		return nil, err
 	}
-	if league.AdminID != adminID {
+	if league.OwnerID != OwnerID {
 		return nil, errors.New("el usuario no es administrador de la liga")
 	}
 
@@ -42,3 +42,5 @@ func (uc *CreateMatchUseCase) Execute(ctx context.Context, adminID, leagueID uui
 
 	return match, nil
 }
+
+

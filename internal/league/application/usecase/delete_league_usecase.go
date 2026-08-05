@@ -25,7 +25,7 @@ func (uc *DeleteLeagueUseCase) Execute(ctx context.Context, in input.DeleteLeagu
 		return errors.New("liga no encontrada")
 	}
 
-	if league.AdminID != in.AdminID {
+	if league.OwnerID != in.OwnerID {
 		return errors.New("solo el administrador puede eliminar la liga")
 	}
 

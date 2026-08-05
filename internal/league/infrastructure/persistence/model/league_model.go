@@ -4,8 +4,9 @@ import "time"
 
 type LeagueModel struct {
 	ID             string    `gorm:"type:uuid;primaryKey;column:id"`
-	AdminID        string    `gorm:"type:uuid;not null;column:admin_id"`
+	OwnerID        string    `gorm:"type:uuid;not null;column:owner_id"`
 	Name           string    `gorm:"type:varchar(100);not null;column:name"`
+	Slug           string    `gorm:"type:varchar(150);uniqueIndex;not null;column:slug"`
 	InitialBalance float64   `gorm:"type:numeric(12,2);not null;column:initial_balance"`
 	MaxRecharges   int       `gorm:"type:integer;not null;default:2;column:max_recharges"`
 	HideStandings  bool      `gorm:"type:boolean;not null;default:false;column:hide_standings"`

@@ -1,7 +1,5 @@
 package response
 
-import "time"
-
 type ParticipantRankingResponse struct {
 	ParticipantID  string  `json:"participant_id"`
 	UserID         string  `json:"user_id"`
@@ -9,16 +7,18 @@ type ParticipantRankingResponse struct {
 	ProfilePicture *string `json:"profile_picture"`
 	Balance        float64 `json:"balance"`
 	Position       int     `json:"position"`
+	Role           string  `json:"role"`
 }
 
 type GetLeagueDetailsResponse struct {
 	LeagueID         string                       `json:"league_id"`
+	Slug             string                       `json:"slug"`
 	Name             string                       `json:"name"`
-	AdminID          string                       `json:"admin_id"`
+	OwnerID          string                       `json:"owner_id"`
 	InitialBalance   float64                      `json:"initial_balance"`
 	MaxRecharges     int                          `json:"max_recharges"`
 	IsRankingVisible bool                         `json:"is_ranking_visible"`
 	InviteCode       string                       `json:"invite_code"`
-	CreatedAt        time.Time                    `json:"created_at"`
+	CreatedAt        string                       `json:"created_at"`
 	Participants     []ParticipantRankingResponse `json:"participants"`
 }
