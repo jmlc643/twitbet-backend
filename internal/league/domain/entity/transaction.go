@@ -13,6 +13,7 @@ const (
 	TransactionTypeRecharge       TransactionType = "RECHARGE"
 	TransactionTypeBet            TransactionType = "BET"
 	TransactionTypeWin            TransactionType = "WIN"
+	TransactionTypeRefund         TransactionType = "REFUND"
 )
 
 type Transaction struct {

@@ -8,6 +8,7 @@ import (
 	"github.com/jmlc643/twitbet-backend/internal/league/application/input"
 	"github.com/jmlc643/twitbet-backend/internal/league/application/usecase"
 	"github.com/jmlc643/twitbet-backend/internal/league/infrastructure/http/dto/request"
+	"github.com/jmlc643/twitbet-backend/internal/league/infrastructure/http/dto/response"
 	"github.com/jmlc643/twitbet-backend/internal/league/infrastructure/http/mapper"
 )
 
@@ -20,6 +21,7 @@ type LeagueHandler struct {
 	deleteLeagueUC     *usecase.DeleteLeagueUseCase
 	assignAdminUC      *usecase.AssignAdminUseCase
 	removeAdminUC      *usecase.RemoveAdminUseCase
+	getParticipantMeUC *usecase.GetParticipantMeUseCase
 }
 
 func NewLeagueHandler(
@@ -31,6 +33,7 @@ func NewLeagueHandler(
 	deleteLeagueUC *usecase.DeleteLeagueUseCase,
 	assignAdminUC *usecase.AssignAdminUseCase,
 	removeAdminUC *usecase.RemoveAdminUseCase,
+	getParticipantMeUC *usecase.GetParticipantMeUseCase,
 ) *LeagueHandler {
 	return &LeagueHandler{
 		createLeagueUC:     createLeagueUC,
@@ -41,6 +44,7 @@ func NewLeagueHandler(
 		deleteLeagueUC:     deleteLeagueUC,
 		assignAdminUC:      assignAdminUC,
 		removeAdminUC:      removeAdminUC,
+		getParticipantMeUC: getParticipantMeUC,
 	}
 }
 
@@ -257,4 +261,42 @@ func (h *LeagueHandler) DeleteLeague(c *gin.Context) {
 	}
 
 	c.Status(http.StatusNoContent)
+}
+
+func (h *LeagueHandler) GetParticipantMe(c *gin.Context) {
+	leagueIDStr := c.Param("id")
+	leagueID, err := uuid.Parse(leagueIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID de liga inválido"})
+		return
+	}
+
+	userIDStr, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not authenticated"})
+		return
+	}
+	userID, err := uuid.Parse(userIDStr.(string))
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid user token"})
+		return
+	}
+
+	participant, err := h.getParticipantMeUC.Execute(c.Request.Context(), userID, leagueID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	res := response.ParticipantMeResponse{
+		ID:                participant.ID.String(),
+		LeagueID:          participant.LeagueID.String(),
+		UserID:            participant.UserID.String(),
+		IsAdmin:           participant.IsAdmin,
+		Balance:           participant.Balance,
+		RechargesConsumed: participant.RechargesConsumed,
+		JoinedAt:          participant.JoinedAt,
+	}
+
+	c.JSON(http.StatusOK, res)
 }

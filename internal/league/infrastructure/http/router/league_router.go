@@ -18,6 +18,7 @@ func RegisterRoutes(router *gin.Engine, db *gorm.DB, rdb *redis.Client, jwtSecre
 	leagueRepo := postgres.NewLeagueRepository(db)
 	matchRepo := postgres.NewMatchRepository(db)
 	marketPublisher := leagueRedis.NewMarketPublisher(rdb)
+	betRepo := postgres.NewBetRepository(db)
 
 	// Casos de uso de Liga
 	createLeagueUC := usecase.NewCreateLeagueUseCase(leagueRepo)
@@ -28,6 +29,7 @@ func RegisterRoutes(router *gin.Engine, db *gorm.DB, rdb *redis.Client, jwtSecre
 	deleteLeagueUC := usecase.NewDeleteLeagueUseCase(leagueRepo)
 	assignAdminUC := usecase.NewAssignAdminUseCase(leagueRepo)
 	removeAdminUC := usecase.NewRemoveAdminUseCase(leagueRepo)
+	getParticipantMeUC := usecase.NewGetParticipantMeUseCase(leagueRepo)
 
 	// Casos de uso de Partido y Mercado
 	createMatchUC := usecase.NewCreateMatchUseCase(leagueRepo, matchRepo)
@@ -36,9 +38,11 @@ func RegisterRoutes(router *gin.Engine, db *gorm.DB, rdb *redis.Client, jwtSecre
 	getLeagueMarketsUC := usecase.NewGetLeagueMarketsUseCase(matchRepo)
 	getMatchMarketsUC := usecase.NewGetMatchMarketsUseCase(matchRepo)
 	getMatchDetailsUC := usecase.NewGetMatchDetailsUseCase(matchRepo)
+	updateMatchStatusUC := usecase.NewUpdateMatchStatusUseCase(matchRepo, leagueRepo, marketPublisher)
 	
 	updateMarketStatusUC := usecase.NewUpdateMarketStatusUseCase(matchRepo, leagueRepo, marketPublisher)
 	updateMarketOddsUC := usecase.NewUpdateMarketOddsUseCase(matchRepo, leagueRepo, marketPublisher)
+	resolveMarketUC := usecase.NewResolveMarketUseCase(betRepo, matchRepo, leagueRepo, marketPublisher)
 
 	// Handlers
 	leagueHandler := handler.NewLeagueHandler(
@@ -50,6 +54,7 @@ func RegisterRoutes(router *gin.Engine, db *gorm.DB, rdb *redis.Client, jwtSecre
 		deleteLeagueUC,
 		assignAdminUC,
 		removeAdminUC,
+		getParticipantMeUC,
 	)
 	matchHandler := handler.NewMatchHandler(
 		createMatchUC,
@@ -58,11 +63,17 @@ func RegisterRoutes(router *gin.Engine, db *gorm.DB, rdb *redis.Client, jwtSecre
 		getLeagueMarketsUC,
 		getMatchMarketsUC,
 		getMatchDetailsUC,
+		updateMatchStatusUC,
 	)
 	marketLiveHandler := handler.NewMarketLiveHandler(
 		*updateMarketStatusUC,
 		*updateMarketOddsUC,
+		*resolveMarketUC,
 	)
+
+	placeBetUC := usecase.NewPlaceBetUseCase(betRepo, leagueRepo, matchRepo, marketPublisher)
+	getUserBetsUC := usecase.NewGetUserBetsUseCase(betRepo, leagueRepo)
+	betHandler := handler.NewBetHandler(placeBetUC, getUserBetsUC)
 
 	tokenService := identityAdapter.NewJWTTokenService(jwtSecret)
 	authMiddleware := identityMiddleware.JWTMiddleware(tokenService)
@@ -86,12 +97,16 @@ func RegisterRoutes(router *gin.Engine, db *gorm.DB, rdb *redis.Client, jwtSecre
 
 			leagueRoutes.POST("/:id/markets", matchHandler.CreateMarketForLeague)
 			leagueRoutes.GET("/:id/markets", matchHandler.GetLeagueMarkets)
+
+			leagueRoutes.GET("/:id/bets", betHandler.GetUserBets)
+			leagueRoutes.GET("/:id/me", leagueHandler.GetParticipantMe)
 		}
 
 		matchRoutes := api.Group("/matches")
 		matchRoutes.Use(authMiddleware)
 		{
 			matchRoutes.GET("/:id", matchHandler.GetMatchDetails)
+			matchRoutes.PATCH("/:id/status", matchHandler.UpdateMatchStatus)
 			matchRoutes.POST("/:id/markets", matchHandler.CreateMarketForMatch)
 			matchRoutes.GET("/:id/markets", matchHandler.GetMatchMarkets)
 		}
@@ -101,6 +116,13 @@ func RegisterRoutes(router *gin.Engine, db *gorm.DB, rdb *redis.Client, jwtSecre
 		{
 			marketRoutes.PATCH("/:id/status", marketLiveHandler.UpdateStatus)
 			marketRoutes.PATCH("/:id/odds", marketLiveHandler.UpdateOdds)
+			marketRoutes.POST("/:id/resolve", marketLiveHandler.ResolveMarket)
+		}
+
+		betRoutes := api.Group("/bets")
+		betRoutes.Use(authMiddleware)
+		{
+			betRoutes.POST("", betHandler.PlaceBet)
 		}
 	}
 }

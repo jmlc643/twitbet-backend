@@ -214,6 +214,87 @@ func (r *matchRepository) UpdateMarket(ctx context.Context, market *entity.Marke
 	})
 }
 
+func (r *matchRepository) UpdateMatchStatusAtomic(ctx context.Context, matchID uuid.UUID, newStatus string) error {
+	tx := r.db.WithContext(ctx).Begin()
+	if tx.Error != nil {
+		return tx.Error
+	}
+	defer tx.Rollback()
+
+	if err := tx.Model(&model.MatchModel{}).Where("id = ?", matchID.String()).Update("status", newStatus).Error; err != nil {
+		return err
+	}
+
+	if newStatus == "VOIDED" {
+		if err := tx.Model(&model.MarketModel{}).Where("match_id = ?", matchID.String()).Update("status", "VOIDED").Error; err != nil {
+			return err
+		}
+
+		var markets []model.MarketModel
+		if err := tx.Where("match_id = ?", matchID.String()).Find(&markets).Error; err != nil {
+			return err
+		}
+		
+		var marketIDs []string
+		for _, m := range markets {
+			marketIDs = append(marketIDs, m.ID)
+		}
+
+		if len(marketIDs) > 0 {
+			var options []model.MarketOptionModel
+			if err := tx.Where("market_id IN ?", marketIDs).Find(&options).Error; err != nil {
+				return err
+			}
+
+			var optionIDs []string
+			for _, opt := range options {
+				optionIDs = append(optionIDs, opt.ID)
+			}
+
+			if len(optionIDs) > 0 {
+				var bets []model.BetModel
+				if err := tx.Where("market_option_id IN ? AND status = ?", optionIDs, string(entity.BetStatusAccepted)).Find(&bets).Error; err != nil {
+					return err
+				}
+
+				for _, bet := range bets {
+					if err := tx.Model(&bet).Update("status", string(entity.BetStatusVoided)).Error; err != nil {
+						return err
+					}
+
+					var participant model.ParticipantModel
+					if err := tx.Set("gorm:query_option", "FOR UPDATE").Where("id = ?", bet.ParticipantID).First(&participant).Error; err != nil {
+						return err
+					}
+
+					participant.Balance += bet.Amount
+					if err := tx.Save(&participant).Error; err != nil {
+						return err
+					}
+
+					var match model.MatchModel
+					if err := tx.Where("id = ?", matchID.String()).First(&match).Error; err != nil {
+						return err
+					}
+
+					txModel := &model.TransactionModel{
+						ID:        uuid.New().String(),
+						LeagueID:  match.LeagueID,
+						UserID:    participant.UserID,
+						Amount:    bet.Amount,
+						Type:      string(entity.TransactionTypeRefund),
+					}
+					if err := tx.Create(txModel).Error; err != nil {
+						return err
+					}
+				}
+			}
+		}
+	}
+
+	return tx.Commit().Error
+}
+
 func mapDBMarketsToEntity(dbMarkets []model.MarketModel) []entity.Market {
 	markets := make([]entity.Market, 0, len(dbMarkets))
 	for _, m := range dbMarkets {
