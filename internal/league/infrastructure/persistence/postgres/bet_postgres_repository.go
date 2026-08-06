@@ -91,3 +91,74 @@ func (r *BetRepository) UpdateBetStatus(ctx context.Context, id uuid.UUID, statu
 			"updated_at": gorm.Expr("NOW()"),
 		}).Error
 }
+
+func (r *BetRepository) ResolveMarketAtomic(ctx context.Context, marketID uuid.UUID, winningOptionID uuid.UUID) error {
+	tx := r.db.WithContext(ctx).Begin()
+	if tx.Error != nil {
+		return tx.Error
+	}
+	defer tx.Rollback()
+
+	if err := tx.Model(&model.MarketModel{}).Where("id = ?", marketID.String()).Update("status", "RESOLVED").Error; err != nil {
+		return err
+	}
+
+	var options []model.MarketOptionModel
+	if err := tx.Where("market_id = ?", marketID.String()).Find(&options).Error; err != nil {
+		return err
+	}
+
+	var optionIDs []string
+	for _, opt := range options {
+		optionIDs = append(optionIDs, opt.ID)
+	}
+
+	if len(optionIDs) == 0 {
+		return tx.Commit().Error
+	}
+
+	var bets []model.BetModel
+	if err := tx.Where("market_option_id IN ? AND status = ?", optionIDs, string(entity.BetStatusAccepted)).Find(&bets).Error; err != nil {
+		return err
+	}
+
+	var market model.MarketModel
+	if err := tx.Where("id = ?", marketID.String()).First(&market).Error; err != nil {
+		return err
+	}
+
+	for _, bet := range bets {
+		if bet.MarketOptionID == winningOptionID.String() {
+			if err := tx.Model(&bet).Update("status", string(entity.BetStatusWon)).Error; err != nil {
+				return err
+			}
+
+			var participant model.ParticipantModel
+			if err := tx.Set("gorm:query_option", "FOR UPDATE").Where("id = ?", bet.ParticipantID).First(&participant).Error; err != nil {
+				return err
+			}
+
+			participant.Balance += bet.PotentialWin
+			if err := tx.Save(&participant).Error; err != nil {
+				return err
+			}
+
+			txModel := &model.TransactionModel{
+				ID:        uuid.New().String(),
+				LeagueID:  market.LeagueID,
+				UserID:    participant.UserID,
+				Amount:    bet.PotentialWin,
+				Type:      string(entity.TransactionTypeWin),
+			}
+			if err := tx.Create(txModel).Error; err != nil {
+				return err
+			}
+		} else {
+			if err := tx.Model(&bet).Update("status", string(entity.BetStatusLost)).Error; err != nil {
+				return err
+			}
+		}
+	}
+
+	return tx.Commit().Error
+}

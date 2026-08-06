@@ -7,20 +7,23 @@ import (
 	"github.com/google/uuid"
 	"github.com/jmlc643/twitbet-backend/internal/league/domain/apperror"
 	"github.com/jmlc643/twitbet-backend/internal/league/domain/entity"
+	"github.com/jmlc643/twitbet-backend/internal/league/domain/port"
 	"github.com/jmlc643/twitbet-backend/internal/league/domain/repository"
 )
 
 type PlaceBetUseCase struct {
-	betRepo     repository.BetRepository
-	leagueRepo  repository.LeagueRepository
-	matchRepo   repository.MatchRepository
+	betRepo         repository.BetRepository
+	leagueRepo      repository.LeagueRepository
+	matchRepo       repository.MatchRepository
+	marketPublisher port.MarketEventPublisher
 }
 
-func NewPlaceBetUseCase(betRepo repository.BetRepository, leagueRepo repository.LeagueRepository, matchRepo repository.MatchRepository) *PlaceBetUseCase {
+func NewPlaceBetUseCase(betRepo repository.BetRepository, leagueRepo repository.LeagueRepository, matchRepo repository.MatchRepository, marketPublisher port.MarketEventPublisher) *PlaceBetUseCase {
 	return &PlaceBetUseCase{
-		betRepo:    betRepo,
-		leagueRepo: leagueRepo,
-		matchRepo:  matchRepo,
+		betRepo:         betRepo,
+		leagueRepo:      leagueRepo,
+		matchRepo:       matchRepo,
+		marketPublisher: marketPublisher,
 	}
 }
 
@@ -90,6 +93,26 @@ func (uc *PlaceBetUseCase) Execute(ctx context.Context, userID, leagueID, market
 	if err != nil {
 		return nil, err
 	}
+
+	const K = 10000.0
+	var totalVirtualVolume float64
+	virtualVolumes := make([]float64, len(market.Options))
+	for i, opt := range market.Options {
+		vol := K / opt.CurrentOdds
+		if opt.ID == marketOptionID {
+			vol += amount
+		}
+		virtualVolumes[i] = vol
+		totalVirtualVolume += vol
+	}
+
+	for i := range market.Options {
+		market.Options[i].CurrentOdds = totalVirtualVolume / virtualVolumes[i]
+	}
+
+	_ = uc.matchRepo.UpdateMarket(ctx, market)
+
+	_ = uc.marketPublisher.PublishOddsUpdated(ctx, market.ID, market.Options)
 
 	go func(bID uuid.UUID) {
 		time.Sleep(4 * time.Second)

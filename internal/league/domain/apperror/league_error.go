@@ -15,4 +15,5 @@ var (
 	ErrMarketNotActive       = errors.New("el mercado no está activo o está suspendido")
 	ErrInvalidBetAmount      = errors.New("el monto de la apuesta es inválido")
 	ErrMarketOptionNotFound  = errors.New("opción de mercado no encontrada")
+	ErrMarketNotFound        = errors.New("mercado no encontrado")
 )
