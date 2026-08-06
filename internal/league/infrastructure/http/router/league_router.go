@@ -37,7 +37,7 @@ func RegisterRoutes(router *gin.Engine, db *gorm.DB, rdb *redis.Client, jwtSecre
 	getLeagueMarketsUC := usecase.NewGetLeagueMarketsUseCase(matchRepo)
 	getMatchMarketsUC := usecase.NewGetMatchMarketsUseCase(matchRepo)
 	getMatchDetailsUC := usecase.NewGetMatchDetailsUseCase(matchRepo)
-	updateMatchStatusUC := usecase.NewUpdateMatchStatusUseCase(matchRepo, leagueRepo)
+	updateMatchStatusUC := usecase.NewUpdateMatchStatusUseCase(matchRepo, leagueRepo, marketPublisher)
 	
 	updateMarketStatusUC := usecase.NewUpdateMarketStatusUseCase(matchRepo, leagueRepo, marketPublisher)
 	updateMarketOddsUC := usecase.NewUpdateMarketOddsUseCase(matchRepo, leagueRepo, marketPublisher)

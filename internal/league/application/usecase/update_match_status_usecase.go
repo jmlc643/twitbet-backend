@@ -5,18 +5,21 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jmlc643/twitbet-backend/internal/league/domain/apperror"
+	"github.com/jmlc643/twitbet-backend/internal/league/domain/port"
 	"github.com/jmlc643/twitbet-backend/internal/league/domain/repository"
 )
 
 type UpdateMatchStatusUseCase struct {
 	matchRepo  repository.MatchRepository
 	leagueRepo repository.LeagueRepository
+	publisher  port.MarketEventPublisher
 }
 
-func NewUpdateMatchStatusUseCase(matchRepo repository.MatchRepository, leagueRepo repository.LeagueRepository) *UpdateMatchStatusUseCase {
+func NewUpdateMatchStatusUseCase(matchRepo repository.MatchRepository, leagueRepo repository.LeagueRepository, publisher port.MarketEventPublisher) *UpdateMatchStatusUseCase {
 	return &UpdateMatchStatusUseCase{
 		matchRepo:  matchRepo,
 		leagueRepo: leagueRepo,
+		publisher:  publisher,
 	}
 }
 
@@ -37,5 +40,9 @@ func (uc *UpdateMatchStatusUseCase) Execute(ctx context.Context, matchID, userID
 		return apperror.ErrUnauthorized
 	}
 
-	return uc.matchRepo.UpdateMatchStatusAtomic(ctx, matchID, newStatus)
+	if err := uc.matchRepo.UpdateMatchStatusAtomic(ctx, matchID, newStatus); err != nil {
+		return err
+	}
+
+	return uc.publisher.PublishMatchStatusChanged(ctx, matchID, newStatus)
 }
