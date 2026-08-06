@@ -11,4 +11,8 @@ var (
 	ErrInvalidMatchTitle     = errors.New("el título del partido es inválido")
 	ErrInvalidMarketName     = errors.New("el nombre del mercado es inválido")
 	ErrInvalidMarketOptions  = errors.New("el mercado debe tener al menos dos opciones")
+	ErrInsufficientBalance   = errors.New("saldo insuficiente para realizar la apuesta")
+	ErrMarketNotActive       = errors.New("el mercado no está activo o está suspendido")
+	ErrInvalidBetAmount      = errors.New("el monto de la apuesta es inválido")
+	ErrMarketOptionNotFound  = errors.New("opción de mercado no encontrada")
 )

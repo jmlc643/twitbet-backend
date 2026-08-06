@@ -40,3 +40,17 @@ func EntityToTransactionModel(e *entity.Transaction) *model.TransactionModel {
 		CreatedAt: e.CreatedAt,
 	}
 }
+
+func EntityToBetModel(e *entity.Bet) *model.BetModel {
+	return &model.BetModel{
+		ID:             e.ID.String(),
+		ParticipantID:  e.ParticipantID.String(),
+		MarketOptionID: e.MarketOptionID.String(),
+		Amount:         e.Amount,
+		Odds:           e.Odds,
+		PotentialWin:   e.PotentialWin,
+		Status:         string(e.Status),
+		PlacedAt:       e.PlacedAt,
+		UpdatedAt:      e.UpdatedAt,
+	}
+}

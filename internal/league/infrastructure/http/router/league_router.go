@@ -58,6 +58,10 @@ func RegisterRoutes(router *gin.Engine, db *gorm.DB, rdb *redis.Client, jwtSecre
 		*updateMarketOddsUC,
 	)
 
+	betRepo := postgres.NewBetRepository(db)
+	placeBetUC := usecase.NewPlaceBetUseCase(betRepo, leagueRepo, matchRepo)
+	betHandler := handler.NewBetHandler(placeBetUC)
+
 	tokenService := identityAdapter.NewJWTTokenService(jwtSecret)
 	authMiddleware := identityMiddleware.JWTMiddleware(tokenService)
 
@@ -92,6 +96,12 @@ func RegisterRoutes(router *gin.Engine, db *gorm.DB, rdb *redis.Client, jwtSecre
 		{
 			marketRoutes.PATCH("/:id/status", marketLiveHandler.UpdateStatus)
 			marketRoutes.PATCH("/:id/odds", marketLiveHandler.UpdateOdds)
+		}
+
+		betRoutes := api.Group("/bets")
+		betRoutes.Use(authMiddleware)
+		{
+			betRoutes.POST("", betHandler.PlaceBet)
 		}
 	}
 }
