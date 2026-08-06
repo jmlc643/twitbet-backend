@@ -8,9 +8,9 @@ import (
 	"github.com/jmlc643/twitbet-backend/internal/league/infrastructure/http/dto/response"
 )
 
-func CreateLeagueRequestToInput(req request.CreateLeagueRequest, adminID uuid.UUID) input.CreateLeagueInput {
+func CreateLeagueRequestToInput(req request.CreateLeagueRequest, OwnerID uuid.UUID) input.CreateLeagueInput {
 	return input.CreateLeagueInput{
-		AdminID:        adminID,
+		OwnerID:        OwnerID,
 		Name:           req.Name,
 		InitialBalance: req.InitialBalance,
 		MaxRecharges:   req.MaxRecharges,
@@ -21,6 +21,7 @@ func CreateLeagueRequestToInput(req request.CreateLeagueRequest, adminID uuid.UU
 func CreateLeagueOutputToResponse(out *output.CreateLeagueOutput) response.CreateLeagueResponse {
 	return response.CreateLeagueResponse{
 		ID:         out.ID.String(),
+		Slug:       out.Slug,
 		InviteCode: out.InviteCode,
 	}
 }
@@ -36,6 +37,7 @@ func JoinLeagueOutputToResponse(out *output.JoinLeagueOutput) response.JoinLeagu
 	return response.JoinLeagueResponse{
 		LeagueID:   out.LeagueID.String(),
 		LeagueName: out.LeagueName,
+		Slug:       out.Slug,
 		Balance:    out.Balance,
 	}
 }
@@ -45,6 +47,7 @@ func GetUserLeaguesOutputToResponse(out *output.GetUserLeaguesOutput) response.G
 	for _, l := range out.Leagues {
 		leagues = append(leagues, response.LeagueSummaryResponse{
 			LeagueID:         l.LeagueID.String(),
+			Slug:             l.Slug,
 			Name:             l.Name,
 			Role:             string(l.Role),
 			ParticipantCount: l.ParticipantCount,
@@ -66,12 +69,14 @@ func GetLeagueDetailsOutputToResponse(out output.GetLeagueDetailsOutput) respons
 			ProfilePicture: p.ProfilePicture,
 			Balance:        p.Balance,
 			Position:       p.Position,
+			Role:           p.Role,
 		})
 	}
 	return response.GetLeagueDetailsResponse{
 		LeagueID:         out.LeagueID.String(),
+		Slug:             out.Slug,
 		Name:             out.Name,
-		AdminID:          out.AdminID.String(),
+		OwnerID:          out.OwnerID.String(),
 		InitialBalance:   out.InitialBalance,
 		MaxRecharges:     out.MaxRecharges,
 		IsRankingVisible: out.IsRankingVisible,

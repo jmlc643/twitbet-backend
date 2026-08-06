@@ -26,7 +26,7 @@ func (uc *UpdateLeagueUseCase) Execute(ctx context.Context, in input.UpdateLeagu
 		return errors.New("liga no encontrada")
 	}
 
-	if league.AdminID != in.AdminID {
+	if league.OwnerID != in.OwnerID {
 		return errors.New("solo el administrador puede modificar la liga")
 	}
 

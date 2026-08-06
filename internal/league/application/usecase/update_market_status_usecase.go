@@ -28,7 +28,7 @@ func NewUpdateMarketStatusUseCase(
 	}
 }
 
-func (u *UpdateMarketStatusUseCase) Execute(ctx context.Context, marketID uuid.UUID, adminID uuid.UUID, newStatus string) error {
+func (u *UpdateMarketStatusUseCase) Execute(ctx context.Context, marketID uuid.UUID, OwnerID uuid.UUID, newStatus string) error {
 	if newStatus != "ACTIVE" && newStatus != "SUSPENDED" {
 		return apperror.ErrInvalidMarketName
 	}
@@ -43,7 +43,7 @@ func (u *UpdateMarketStatusUseCase) Execute(ctx context.Context, marketID uuid.U
 		return err
 	}
 
-	if league.AdminID != adminID {
+	if league.OwnerID != OwnerID {
 		return errors.New("no autorizado")
 	}
 

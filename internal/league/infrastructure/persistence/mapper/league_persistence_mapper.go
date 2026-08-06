@@ -8,8 +8,9 @@ import (
 func EntityToLeagueModel(e *entity.League) *model.LeagueModel {
 	return &model.LeagueModel{
 		ID:             e.ID.String(),
-		AdminID:        e.AdminID.String(),
+		OwnerID:        e.OwnerID.String(),
 		Name:           e.Name,
+		Slug:           e.Slug,
 		InitialBalance: e.InitialBalance,
 		MaxRecharges:   e.MaxRecharges,
 		HideStandings:  e.HideStandings,
@@ -24,6 +25,7 @@ func EntityToParticipantModel(e *entity.Participant) *model.ParticipantModel {
 		ID:                e.ID.String(),
 		LeagueID:          e.LeagueID.String(),
 		UserID:            e.UserID.String(),
+		IsAdmin:           e.IsAdmin,
 		Balance:           e.Balance,
 		RechargesConsumed: e.RechargesConsumed,
 		JoinedAt:          e.JoinedAt,

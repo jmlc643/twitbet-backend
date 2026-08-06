@@ -18,6 +18,7 @@ type MatchHandler struct {
 	getLeagueMatchesUseCase *usecase.GetLeagueMatchesUseCase
 	getLeagueMarketsUseCase *usecase.GetLeagueMarketsUseCase
 	getMatchMarketsUseCase  *usecase.GetMatchMarketsUseCase
+	getMatchDetailsUseCase  *usecase.GetMatchDetailsUseCase
 }
 
 func NewMatchHandler(
@@ -26,6 +27,7 @@ func NewMatchHandler(
 	getLeagueMatchesUC *usecase.GetLeagueMatchesUseCase,
 	getLeagueMarketsUC *usecase.GetLeagueMarketsUseCase,
 	getMatchMarketsUC *usecase.GetMatchMarketsUseCase,
+	getMatchDetailsUC *usecase.GetMatchDetailsUseCase,
 ) *MatchHandler {
 	return &MatchHandler{
 		createMatchUseCase:     createMatchUC,
@@ -33,6 +35,7 @@ func NewMatchHandler(
 		getLeagueMatchesUseCase: getLeagueMatchesUC,
 		getLeagueMarketsUseCase: getLeagueMarketsUC,
 		getMatchMarketsUseCase:  getMatchMarketsUC,
+		getMatchDetailsUseCase:  getMatchDetailsUC,
 	}
 }
 
@@ -50,14 +53,14 @@ func (h *MatchHandler) CreateMatch(c *gin.Context) {
 		return
 	}
 
-	adminIDStr, exists := c.Get("userID")
+	OwnerIDStr, exists := c.Get("userID")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Usuario no autorizado"})
 		return
 	}
-	adminID, _ := uuid.Parse(adminIDStr.(string))
+	OwnerID, _ := uuid.Parse(OwnerIDStr.(string))
 
-	match, err := h.createMatchUseCase.Execute(c.Request.Context(), adminID, leagueID, req.Title, req.StartTime)
+	match, err := h.createMatchUseCase.Execute(c.Request.Context(), OwnerID, leagueID, req.Title, req.StartTime)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -80,19 +83,19 @@ func (h *MatchHandler) CreateMarketForLeague(c *gin.Context) {
 		return
 	}
 
-	adminIDStr, exists := c.Get("userID")
+	OwnerIDStr, exists := c.Get("userID")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Usuario no autorizado"})
 		return
 	}
-	adminID, _ := uuid.Parse(adminIDStr.(string))
+	OwnerID, _ := uuid.Parse(OwnerIDStr.(string))
 
 	var inputOptions []input.MarketOptionInput
 	for _, opt := range req.Options {
 		inputOptions = append(inputOptions, input.MarketOptionInput{Name: opt.Name, Odds: opt.Odds})
 	}
 
-	market, err := h.createMarketUseCase.Execute(c.Request.Context(), adminID, leagueID, nil, req.Name, inputOptions)
+	market, err := h.createMarketUseCase.Execute(c.Request.Context(), OwnerID, leagueID, nil, req.Name, inputOptions)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -115,19 +118,19 @@ func (h *MatchHandler) CreateMarketForMatch(c *gin.Context) {
 		return
 	}
 
-	adminIDStr, exists := c.Get("userID")
+	OwnerIDStr, exists := c.Get("userID")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Usuario no autorizado"})
 		return
 	}
-	adminID, _ := uuid.Parse(adminIDStr.(string))
+	OwnerID, _ := uuid.Parse(OwnerIDStr.(string))
 
 	var inputOptions []input.MarketOptionInput
 	for _, opt := range req.Options {
 		inputOptions = append(inputOptions, input.MarketOptionInput{Name: opt.Name, Odds: opt.Odds})
 	}
 
-	market, err := h.createMarketUseCase.Execute(c.Request.Context(), adminID, uuid.Nil, &matchID, req.Name, inputOptions)
+	market, err := h.createMarketUseCase.Execute(c.Request.Context(), OwnerID, uuid.Nil, &matchID, req.Name, inputOptions)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -219,4 +222,40 @@ func (h *MatchHandler) GetMatchMarkets(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, marketResponses)
+}
+
+func (h *MatchHandler) GetMatchDetails(c *gin.Context) {
+	slug := c.Param("id")
+	if slug == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "slug de partido inválido"})
+		return
+	}
+
+	out, err := h.getMatchDetailsUseCase.Execute(c.Request.Context(), slug)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	var marketResponses []response.MarketResponse
+	for _, m := range out.Markets {
+		marketResponses = append(marketResponses, response.NewMarketResponse(&m))
+	}
+	if marketResponses == nil {
+		marketResponses = []response.MarketResponse{}
+	}
+
+	res := response.GetMatchDetailsResponse{
+		ID:        out.ID.String(),
+		LeagueID:  out.LeagueID.String(),
+		Slug:      out.Slug,
+		Title:     out.Title,
+		StartTime: out.StartTime,
+		Status:    out.Status,
+		Markets:   marketResponses,
+		CreatedAt: out.CreatedAt,
+		UpdatedAt: out.UpdatedAt,
+	}
+
+	c.JSON(http.StatusOK, res)
 }

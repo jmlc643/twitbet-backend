@@ -26,6 +26,8 @@ func RegisterRoutes(router *gin.Engine, db *gorm.DB, rdb *redis.Client, jwtSecre
 	getLeagueDetailsUC := usecase.NewGetLeagueDetailsUseCase(leagueRepo)
 	updateLeagueUC := usecase.NewUpdateLeagueUseCase(leagueRepo)
 	deleteLeagueUC := usecase.NewDeleteLeagueUseCase(leagueRepo)
+	assignAdminUC := usecase.NewAssignAdminUseCase(leagueRepo)
+	removeAdminUC := usecase.NewRemoveAdminUseCase(leagueRepo)
 
 	// Casos de uso de Partido y Mercado
 	createMatchUC := usecase.NewCreateMatchUseCase(leagueRepo, matchRepo)
@@ -33,6 +35,7 @@ func RegisterRoutes(router *gin.Engine, db *gorm.DB, rdb *redis.Client, jwtSecre
 	getLeagueMatchesUC := usecase.NewGetLeagueMatchesUseCase(matchRepo)
 	getLeagueMarketsUC := usecase.NewGetLeagueMarketsUseCase(matchRepo)
 	getMatchMarketsUC := usecase.NewGetMatchMarketsUseCase(matchRepo)
+	getMatchDetailsUC := usecase.NewGetMatchDetailsUseCase(matchRepo)
 	
 	updateMarketStatusUC := usecase.NewUpdateMarketStatusUseCase(matchRepo, leagueRepo, marketPublisher)
 	updateMarketOddsUC := usecase.NewUpdateMarketOddsUseCase(matchRepo, leagueRepo, marketPublisher)
@@ -45,6 +48,8 @@ func RegisterRoutes(router *gin.Engine, db *gorm.DB, rdb *redis.Client, jwtSecre
 		getLeagueDetailsUC,
 		updateLeagueUC,
 		deleteLeagueUC,
+		assignAdminUC,
+		removeAdminUC,
 	)
 	matchHandler := handler.NewMatchHandler(
 		createMatchUC,
@@ -52,6 +57,7 @@ func RegisterRoutes(router *gin.Engine, db *gorm.DB, rdb *redis.Client, jwtSecre
 		getLeagueMatchesUC,
 		getLeagueMarketsUC,
 		getMatchMarketsUC,
+		getMatchDetailsUC,
 	)
 	marketLiveHandler := handler.NewMarketLiveHandler(
 		*updateMarketStatusUC,
@@ -76,6 +82,8 @@ func RegisterRoutes(router *gin.Engine, db *gorm.DB, rdb *redis.Client, jwtSecre
 			leagueRoutes.GET("/:id", leagueHandler.GetLeagueDetails)
 			leagueRoutes.PUT("/:id", leagueHandler.UpdateLeague)
 			leagueRoutes.DELETE("/:id", leagueHandler.DeleteLeague)
+			leagueRoutes.POST("/:id/admins", leagueHandler.AssignAdmin)
+			leagueRoutes.DELETE("/:id/admins/:participant_id", leagueHandler.RemoveAdmin)
 
 			leagueRoutes.POST("/:id/matches", matchHandler.CreateMatch)
 			leagueRoutes.GET("/:id/matches", matchHandler.GetMatches)
@@ -87,6 +95,7 @@ func RegisterRoutes(router *gin.Engine, db *gorm.DB, rdb *redis.Client, jwtSecre
 		matchRoutes := api.Group("/matches")
 		matchRoutes.Use(authMiddleware)
 		{
+			matchRoutes.GET("/:id", matchHandler.GetMatchDetails)
 			matchRoutes.POST("/:id/markets", matchHandler.CreateMarketForMatch)
 			matchRoutes.GET("/:id/markets", matchHandler.GetMatchMarkets)
 		}

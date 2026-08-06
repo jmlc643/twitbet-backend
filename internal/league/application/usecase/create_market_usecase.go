@@ -22,7 +22,7 @@ func NewCreateMarketUseCase(leagueRepo repository.LeagueRepository, matchRepo re
 	}
 }
 
-func (uc *CreateMarketUseCase) Execute(ctx context.Context, adminID, leagueID uuid.UUID, matchID *uuid.UUID, name string, options []input.MarketOptionInput) (*entity.Market, error) {
+func (uc *CreateMarketUseCase) Execute(ctx context.Context, OwnerID, leagueID uuid.UUID, matchID *uuid.UUID, name string, options []input.MarketOptionInput) (*entity.Market, error) {
 	if leagueID == uuid.Nil && matchID != nil {
 		match, err := uc.matchRepo.GetMatchByID(ctx, *matchID)
 		if err != nil {
@@ -35,7 +35,7 @@ func (uc *CreateMarketUseCase) Execute(ctx context.Context, adminID, leagueID uu
 	if err != nil {
 		return nil, err
 	}
-	if league.AdminID != adminID {
+	if league.OwnerID != OwnerID {
 		return nil, errors.New("el usuario no es administrador de la liga")
 	}
 
@@ -65,3 +65,5 @@ func (uc *CreateMarketUseCase) Execute(ctx context.Context, adminID, leagueID uu
 
 	return market, nil
 }
+
+

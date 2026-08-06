@@ -22,6 +22,7 @@ func (r *matchRepository) CreateMatch(ctx context.Context, match *entity.Match) 
 	dbMatch := &model.MatchModel{
 		ID:        match.ID.String(),
 		LeagueID:  match.LeagueID.String(),
+		Slug:      match.Slug,
 		Title:     match.Title,
 		StartTime: match.StartTime,
 		Status:    match.Status,
@@ -74,6 +75,31 @@ func (r *matchRepository) GetMatchByID(ctx context.Context, id uuid.UUID) (*enti
 	return &entity.Match{
 		ID:        matchID,
 		LeagueID:  leagueID,
+		Slug:      dbMatch.Slug,
+		Title:     dbMatch.Title,
+		StartTime: dbMatch.StartTime,
+		Status:    dbMatch.Status,
+		CreatedAt: dbMatch.CreatedAt,
+		UpdatedAt: dbMatch.UpdatedAt,
+	}, nil
+}
+
+func (r *matchRepository) GetMatchBySlug(ctx context.Context, slug string) (*entity.Match, error) {
+	var dbMatch model.MatchModel
+	if err := r.db.WithContext(ctx).First(&dbMatch, "slug = ?", slug).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	matchID, _ := uuid.Parse(dbMatch.ID)
+	leagueID, _ := uuid.Parse(dbMatch.LeagueID)
+
+	return &entity.Match{
+		ID:        matchID,
+		LeagueID:  leagueID,
+		Slug:      dbMatch.Slug,
 		Title:     dbMatch.Title,
 		StartTime: dbMatch.StartTime,
 		Status:    dbMatch.Status,
@@ -111,6 +137,7 @@ func (r *matchRepository) GetMatchesByLeagueID(ctx context.Context, leagueID uui
 		matches = append(matches, entity.Match{
 			ID:        mID,
 			LeagueID:  lID,
+			Slug:      m.Slug,
 			Title:     m.Title,
 			StartTime: m.StartTime,
 			Status:    m.Status,

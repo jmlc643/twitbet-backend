@@ -1,30 +1,30 @@
 package output
 
 import (
-	"time"
-
 	"github.com/google/uuid"
 	"github.com/jmlc643/twitbet-backend/internal/league/domain/entity"
 )
 
 type ParticipantRankingOutput struct {
-	ParticipantID uuid.UUID
-	UserID        uuid.UUID
-	Username      string
+	ParticipantID  uuid.UUID
+	UserID         uuid.UUID
+	Username       string
 	ProfilePicture *string
-	Balance       float64
-	Position      int
+	Balance        float64
+	Position       int
+	Role           string
 }
 
 type GetLeagueDetailsOutput struct {
 	LeagueID         uuid.UUID
+	Slug             string
 	Name             string
-	AdminID          uuid.UUID
+	OwnerID          uuid.UUID
 	InitialBalance   float64
 	MaxRecharges     int
 	IsRankingVisible bool
 	InviteCode       string
-	CreatedAt        time.Time
+	CreatedAt        string
 	Participants     []ParticipantRankingOutput
 }
 
@@ -38,6 +38,7 @@ func EntityToParticipantRankingOutput(rankings []entity.ParticipantRanking) []Pa
 			ProfilePicture: r.ProfilePicture,
 			Balance:        r.Balance,
 			Position:       r.Position,
+			Role:           r.Role,
 		})
 	}
 	return output
