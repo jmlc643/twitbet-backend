@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jmlc643/twitbet-backend/internal/league/domain/apperror"
@@ -161,4 +162,74 @@ func (r *BetRepository) ResolveMarketAtomic(ctx context.Context, marketID uuid.U
 	}
 
 	return tx.Commit().Error
+}
+
+func (r *BetRepository) GetBetsByParticipantID(ctx context.Context, participantID uuid.UUID, status *entity.BetStatus, startDate, endDate *time.Time, limit, offset int) ([]entity.BetDetail, int64, error) {
+	var results []struct {
+		ID           string
+		Amount       float64
+		Odds         float64
+		PotentialWin float64
+		Status       string
+		PlacedAt     time.Time
+		MatchTitle   string
+		MarketName   string
+		OptionName   string
+	}
+
+	baseQuery := r.db.WithContext(ctx).Table("bets").
+		Joins("JOIN market_options ON bets.market_option_id = market_options.id").
+		Joins("JOIN markets ON market_options.market_id = markets.id").
+		Joins("JOIN matches ON markets.match_id = matches.id").
+		Where("bets.participant_id = ?", participantID.String())
+
+	if status != nil {
+		baseQuery = baseQuery.Where("bets.status = ?", string(*status))
+	}
+	if startDate != nil {
+		baseQuery = baseQuery.Where("bets.placed_at >= ?", *startDate)
+	}
+	if endDate != nil {
+		baseQuery = baseQuery.Where("bets.placed_at <= ?", *endDate)
+	}
+
+	var total int64
+	if err := baseQuery.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	query := baseQuery.
+		Select(`bets.id, bets.amount, bets.odds, bets.potential_win, bets.status, bets.placed_at,
+		        matches.title as match_title, markets.name as market_name, market_options.name as option_name`).
+		Order("bets.placed_at DESC")
+
+	if limit > 0 {
+		query = query.Limit(limit)
+	}
+	if offset >= 0 {
+		query = query.Offset(offset)
+	}
+
+	if err := query.Scan(&results).Error; err != nil {
+		return nil, 0, err
+	}
+
+	var betDetails []entity.BetDetail
+	for _, row := range results {
+		id, _ := uuid.Parse(row.ID)
+		
+		betDetails = append(betDetails, entity.BetDetail{
+			ID:           id,
+			Amount:       row.Amount,
+			Odds:         row.Odds,
+			PotentialWin: row.PotentialWin,
+			Status:       entity.BetStatus(row.Status),
+			PlacedAt:     row.PlacedAt,
+			MatchTitle:   row.MatchTitle,
+			MarketName:   row.MarketName,
+			OptionName:   row.OptionName,
+		})
+	}
+
+	return betDetails, total, nil
 }

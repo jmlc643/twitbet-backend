@@ -48,3 +48,15 @@ func NewBet(participantID, marketOptionID uuid.UUID, amount, odds float64) (*Bet
 		UpdatedAt:      now,
 	}, nil
 }
+
+type BetDetail struct {
+	ID           uuid.UUID
+	Amount       float64
+	Odds         float64
+	PotentialWin float64
+	Status       BetStatus
+	PlacedAt     time.Time
+	MatchTitle   string
+	MarketName   string
+	OptionName   string
+}

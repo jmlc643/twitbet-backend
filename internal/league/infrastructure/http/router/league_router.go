@@ -29,6 +29,7 @@ func RegisterRoutes(router *gin.Engine, db *gorm.DB, rdb *redis.Client, jwtSecre
 	deleteLeagueUC := usecase.NewDeleteLeagueUseCase(leagueRepo)
 	assignAdminUC := usecase.NewAssignAdminUseCase(leagueRepo)
 	removeAdminUC := usecase.NewRemoveAdminUseCase(leagueRepo)
+	getParticipantMeUC := usecase.NewGetParticipantMeUseCase(leagueRepo)
 
 	// Casos de uso de Partido y Mercado
 	createMatchUC := usecase.NewCreateMatchUseCase(leagueRepo, matchRepo)
@@ -53,6 +54,7 @@ func RegisterRoutes(router *gin.Engine, db *gorm.DB, rdb *redis.Client, jwtSecre
 		deleteLeagueUC,
 		assignAdminUC,
 		removeAdminUC,
+		getParticipantMeUC,
 	)
 	matchHandler := handler.NewMatchHandler(
 		createMatchUC,
@@ -70,7 +72,8 @@ func RegisterRoutes(router *gin.Engine, db *gorm.DB, rdb *redis.Client, jwtSecre
 	)
 
 	placeBetUC := usecase.NewPlaceBetUseCase(betRepo, leagueRepo, matchRepo, marketPublisher)
-	betHandler := handler.NewBetHandler(placeBetUC)
+	getUserBetsUC := usecase.NewGetUserBetsUseCase(betRepo, leagueRepo)
+	betHandler := handler.NewBetHandler(placeBetUC, getUserBetsUC)
 
 	tokenService := identityAdapter.NewJWTTokenService(jwtSecret)
 	authMiddleware := identityMiddleware.JWTMiddleware(tokenService)
@@ -94,6 +97,9 @@ func RegisterRoutes(router *gin.Engine, db *gorm.DB, rdb *redis.Client, jwtSecre
 
 			leagueRoutes.POST("/:id/markets", matchHandler.CreateMarketForLeague)
 			leagueRoutes.GET("/:id/markets", matchHandler.GetLeagueMarkets)
+
+			leagueRoutes.GET("/:id/bets", betHandler.GetUserBets)
+			leagueRoutes.GET("/:id/me", leagueHandler.GetParticipantMe)
 		}
 
 		matchRoutes := api.Group("/matches")
