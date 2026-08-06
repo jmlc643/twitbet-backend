@@ -21,7 +21,9 @@ type BetDetailResponse struct {
 	Status       string    `json:"status"`
 	PlacedAt     time.Time `json:"placed_at"`
 	MatchTitle   string    `json:"match_title"`
+	MarketID     string    `json:"market_id"`
 	MarketName   string    `json:"market_name"`
+	OptionID     string    `json:"option_id"`
 	OptionName   string    `json:"option_name"`
 }
 

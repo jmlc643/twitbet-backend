@@ -93,3 +93,22 @@ func (p *marketPublisher) PublishMatchStatusChanged(ctx context.Context, matchID
 	}
 	return p.client.Publish(ctx, "match_events", payload).Err()
 }
+
+type MarketResolvedEvent struct {
+	Type            string    `json:"type"`
+	MarketID        uuid.UUID `json:"market_id"`
+	WinningOptionID uuid.UUID `json:"winning_option_id"`
+}
+
+func (p *marketPublisher) PublishMarketResolved(ctx context.Context, marketID uuid.UUID, winningOptionID uuid.UUID) error {
+	event := MarketResolvedEvent{
+		Type:            "MARKET_RESOLVED",
+		MarketID:        marketID,
+		WinningOptionID: winningOptionID,
+	}
+	payload, err := json.Marshal(event)
+	if err != nil {
+		return err
+	}
+	return p.client.Publish(ctx, "market_events", payload).Err()
+}

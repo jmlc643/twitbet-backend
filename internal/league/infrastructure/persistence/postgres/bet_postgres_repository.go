@@ -173,7 +173,9 @@ func (r *BetRepository) GetBetsByParticipantID(ctx context.Context, participantI
 		Status       string
 		PlacedAt     time.Time
 		MatchTitle   string
+		MarketID     string
 		MarketName   string
+		OptionID     string
 		OptionName   string
 	}
 
@@ -200,7 +202,7 @@ func (r *BetRepository) GetBetsByParticipantID(ctx context.Context, participantI
 
 	query := baseQuery.
 		Select(`bets.id, bets.amount, bets.odds, bets.potential_win, bets.status, bets.placed_at,
-		        matches.title as match_title, markets.name as market_name, market_options.name as option_name`).
+		        matches.title as match_title, markets.id as market_id, markets.name as market_name, market_options.id as option_id, market_options.name as option_name`).
 		Order("bets.placed_at DESC")
 
 	if limit > 0 {
@@ -217,6 +219,8 @@ func (r *BetRepository) GetBetsByParticipantID(ctx context.Context, participantI
 	var betDetails []entity.BetDetail
 	for _, row := range results {
 		id, _ := uuid.Parse(row.ID)
+		marketID, _ := uuid.Parse(row.MarketID)
+		optionID, _ := uuid.Parse(row.OptionID)
 		
 		betDetails = append(betDetails, entity.BetDetail{
 			ID:           id,
@@ -226,7 +230,9 @@ func (r *BetRepository) GetBetsByParticipantID(ctx context.Context, participantI
 			Status:       entity.BetStatus(row.Status),
 			PlacedAt:     row.PlacedAt,
 			MatchTitle:   row.MatchTitle,
+			MarketID:     marketID,
 			MarketName:   row.MarketName,
+			OptionID:     optionID,
 			OptionName:   row.OptionName,
 		})
 	}

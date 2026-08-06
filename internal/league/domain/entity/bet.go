@@ -57,6 +57,8 @@ type BetDetail struct {
 	Status       BetStatus
 	PlacedAt     time.Time
 	MatchTitle   string
+	MarketID     uuid.UUID
 	MarketName   string
+	OptionID     uuid.UUID
 	OptionName   string
 }

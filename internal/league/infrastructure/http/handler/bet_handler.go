@@ -147,7 +147,9 @@ func (h *BetHandler) GetUserBets(c *gin.Context) {
 			Status:       string(b.Status),
 			PlacedAt:     b.PlacedAt,
 			MatchTitle:   b.MatchTitle,
+			MarketID:     b.MarketID.String(),
 			MarketName:   b.MarketName,
+			OptionID:     b.OptionID.String(),
 			OptionName:   b.OptionName,
 		})
 	}
