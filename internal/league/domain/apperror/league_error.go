@@ -16,4 +16,6 @@ var (
 	ErrInvalidBetAmount      = errors.New("el monto de la apuesta es inválido")
 	ErrMarketOptionNotFound  = errors.New("opción de mercado no encontrada")
 	ErrMarketNotFound        = errors.New("mercado no encontrado")
+	ErrMatchNotFound         = errors.New("partido no encontrado")
+	ErrUnauthorized          = errors.New("usuario no autorizado para realizar esta acción")
 )

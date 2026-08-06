@@ -15,6 +15,7 @@ const (
 	BetStatusRejected BetStatus = "REJECTED"
 	BetStatusWon      BetStatus = "WON"
 	BetStatusLost     BetStatus = "LOST"
+	BetStatusVoided   BetStatus = "VOIDED"
 )
 
 type Bet struct {

@@ -19,6 +19,7 @@ type MatchHandler struct {
 	getLeagueMarketsUseCase *usecase.GetLeagueMarketsUseCase
 	getMatchMarketsUseCase  *usecase.GetMatchMarketsUseCase
 	getMatchDetailsUseCase  *usecase.GetMatchDetailsUseCase
+	updateMatchStatusUseCase *usecase.UpdateMatchStatusUseCase
 }
 
 func NewMatchHandler(
@@ -28,6 +29,7 @@ func NewMatchHandler(
 	getLeagueMarketsUC *usecase.GetLeagueMarketsUseCase,
 	getMatchMarketsUC *usecase.GetMatchMarketsUseCase,
 	getMatchDetailsUC *usecase.GetMatchDetailsUseCase,
+	updateMatchStatusUC *usecase.UpdateMatchStatusUseCase,
 ) *MatchHandler {
 	return &MatchHandler{
 		createMatchUseCase:     createMatchUC,
@@ -36,6 +38,7 @@ func NewMatchHandler(
 		getLeagueMarketsUseCase: getLeagueMarketsUC,
 		getMatchMarketsUseCase:  getMatchMarketsUC,
 		getMatchDetailsUseCase:  getMatchDetailsUC,
+		updateMatchStatusUseCase: updateMatchStatusUC,
 	}
 }
 
@@ -258,4 +261,38 @@ func (h *MatchHandler) GetMatchDetails(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, res)
+}
+
+func (h *MatchHandler) UpdateMatchStatus(c *gin.Context) {
+	OwnerIDStr, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "no autorizado"})
+		return
+	}
+
+	OwnerID, err := uuid.Parse(OwnerIDStr.(string))
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "ID de usuario inválido"})
+		return
+	}
+
+	matchIDStr := c.Param("id")
+	matchID, err := uuid.Parse(matchIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID de partido inválido"})
+		return
+	}
+
+	var req request.UpdateMatchStatusRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Payload inválido"})
+		return
+	}
+
+	if err := h.updateMatchStatusUseCase.Execute(c.Request.Context(), matchID, OwnerID, req.Status); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Estado de partido actualizado exitosamente"})
 }

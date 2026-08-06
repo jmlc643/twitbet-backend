@@ -17,4 +17,5 @@ type MatchRepository interface {
 	GetMarketsByMatchID(ctx context.Context, matchID uuid.UUID) ([]entity.Market, error)
 	GetMarketByID(ctx context.Context, id uuid.UUID) (*entity.Market, error)
 	UpdateMarket(ctx context.Context, market *entity.Market) error
+	UpdateMatchStatusAtomic(ctx context.Context, matchID uuid.UUID, newStatus string) error
 }

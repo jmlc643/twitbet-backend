@@ -37,6 +37,7 @@ func RegisterRoutes(router *gin.Engine, db *gorm.DB, rdb *redis.Client, jwtSecre
 	getLeagueMarketsUC := usecase.NewGetLeagueMarketsUseCase(matchRepo)
 	getMatchMarketsUC := usecase.NewGetMatchMarketsUseCase(matchRepo)
 	getMatchDetailsUC := usecase.NewGetMatchDetailsUseCase(matchRepo)
+	updateMatchStatusUC := usecase.NewUpdateMatchStatusUseCase(matchRepo, leagueRepo)
 	
 	updateMarketStatusUC := usecase.NewUpdateMarketStatusUseCase(matchRepo, leagueRepo, marketPublisher)
 	updateMarketOddsUC := usecase.NewUpdateMarketOddsUseCase(matchRepo, leagueRepo, marketPublisher)
@@ -60,6 +61,7 @@ func RegisterRoutes(router *gin.Engine, db *gorm.DB, rdb *redis.Client, jwtSecre
 		getLeagueMarketsUC,
 		getMatchMarketsUC,
 		getMatchDetailsUC,
+		updateMatchStatusUC,
 	)
 	marketLiveHandler := handler.NewMarketLiveHandler(
 		*updateMarketStatusUC,
@@ -98,6 +100,7 @@ func RegisterRoutes(router *gin.Engine, db *gorm.DB, rdb *redis.Client, jwtSecre
 		matchRoutes.Use(authMiddleware)
 		{
 			matchRoutes.GET("/:id", matchHandler.GetMatchDetails)
+			matchRoutes.PATCH("/:id/status", matchHandler.UpdateMatchStatus)
 			matchRoutes.POST("/:id/markets", matchHandler.CreateMarketForMatch)
 			matchRoutes.GET("/:id/markets", matchHandler.GetMatchMarkets)
 		}
