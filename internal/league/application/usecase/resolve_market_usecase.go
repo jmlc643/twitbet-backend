@@ -53,7 +53,7 @@ func (uc *ResolveMarketUseCase) Execute(ctx context.Context, marketID, winningOp
 		return err
 	}
 
-	_ = uc.marketPublisher.PublishMarketResolved(ctx, marketID, winningOptionID)
+	_ = uc.marketPublisher.PublishMarketResolved(ctx, marketID, market.LeagueID, winningOptionID)
 
 	_ = uc.marketPublisher.PublishMarketStatusChanged(ctx, marketID, "RESOLVED")
 

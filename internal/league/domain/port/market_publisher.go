@@ -11,5 +11,5 @@ type MarketEventPublisher interface {
 	PublishMarketStatusChanged(ctx context.Context, marketID uuid.UUID, newStatus string) error
 	PublishOddsUpdated(ctx context.Context, marketID uuid.UUID, options []entity.MarketOption) error
 	PublishMatchStatusChanged(ctx context.Context, matchID uuid.UUID, newStatus string) error
-	PublishMarketResolved(ctx context.Context, marketID uuid.UUID, winningOptionID uuid.UUID) error
+	PublishMarketResolved(ctx context.Context, marketID uuid.UUID, leagueID uuid.UUID, winningOptionID uuid.UUID) error
 }
