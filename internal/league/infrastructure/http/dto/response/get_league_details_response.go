@@ -20,5 +20,6 @@ type GetLeagueDetailsResponse struct {
 	IsRankingVisible bool                         `json:"is_ranking_visible"`
 	InviteCode       string                       `json:"invite_code"`
 	CreatedAt        string                       `json:"created_at"`
+	ParticipantsCount int                         `json:"participants_count"`
 	Participants     []ParticipantRankingResponse `json:"participants"`
 }

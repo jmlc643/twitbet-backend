@@ -10,8 +10,10 @@ type BetModel struct {
 	Odds           float64   `gorm:"not null"`
 	PotentialWin   float64   `gorm:"not null"`
 	Status         string    `gorm:"type:varchar(20);not null"`
-	PlacedAt       time.Time `gorm:"not null"`
-	UpdatedAt      time.Time `gorm:"not null"`
+	PlacedAt           time.Time `gorm:"not null"`
+	UpdatedAt          time.Time `gorm:"not null"`
+	IsBonusBet         bool      `gorm:"not null;default:false"`
+	ParticipantBonusID *string   `gorm:"type:uuid;index"`
 }
 
 func (BetModel) TableName() string {

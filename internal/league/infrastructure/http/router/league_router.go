@@ -30,6 +30,9 @@ func RegisterRoutes(router *gin.Engine, db *gorm.DB, rdb *redis.Client, jwtSecre
 	assignAdminUC := usecase.NewAssignAdminUseCase(leagueRepo)
 	removeAdminUC := usecase.NewRemoveAdminUseCase(leagueRepo)
 	getParticipantMeUC := usecase.NewGetParticipantMeUseCase(leagueRepo)
+	rechargeBalanceUC := usecase.NewRechargeBalanceUseCase(leagueRepo)
+	grantLeagueBonusUC := usecase.NewGrantLeagueBonusUseCase(leagueRepo)
+	getPendingBonusesUC := usecase.NewGetPendingBonusesUseCase(leagueRepo)
 
 	// Casos de uso de Partido y Mercado
 	createMatchUC := usecase.NewCreateMatchUseCase(leagueRepo, matchRepo)
@@ -55,6 +58,9 @@ func RegisterRoutes(router *gin.Engine, db *gorm.DB, rdb *redis.Client, jwtSecre
 		assignAdminUC,
 		removeAdminUC,
 		getParticipantMeUC,
+		rechargeBalanceUC,
+		grantLeagueBonusUC,
+		getPendingBonusesUC,
 	)
 	matchHandler := handler.NewMatchHandler(
 		createMatchUC,
@@ -101,6 +107,10 @@ func RegisterRoutes(router *gin.Engine, db *gorm.DB, rdb *redis.Client, jwtSecre
 
 			leagueRoutes.GET("/:id/bets", betHandler.GetUserBets)
 			leagueRoutes.GET("/:id/me", leagueHandler.GetParticipantMe)
+
+			leagueRoutes.POST("/:id/recharge", leagueHandler.RechargeBalance)
+			leagueRoutes.POST("/:id/bonuses", leagueHandler.GrantBonus)
+			leagueRoutes.GET("/:id/bonuses/me", leagueHandler.GetMyBonuses)
 		}
 
 		matchRoutes := api.Group("/matches")

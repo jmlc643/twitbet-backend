@@ -34,6 +34,10 @@ func (uc *CashoutBetUseCase) Execute(ctx context.Context, userID, betID uuid.UUI
 		return nil, errors.New("bet is not active")
 	}
 
+	if bet.IsBonusBet {
+		return nil, errors.New("cannot cashout a bonus bet")
+	}
+
 	participant, err := uc.leagueRepo.GetParticipantByID(ctx, bet.ParticipantID)
 	if err != nil {
 		return nil, err

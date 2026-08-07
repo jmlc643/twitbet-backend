@@ -44,15 +44,35 @@ func EntityToTransactionModel(e *entity.Transaction) *model.TransactionModel {
 }
 
 func EntityToBetModel(e *entity.Bet) *model.BetModel {
+	var bonusID *string
+	if e.ParticipantBonusID != nil {
+		idStr := e.ParticipantBonusID.String()
+		bonusID = &idStr
+	}
+
 	return &model.BetModel{
-		ID:             e.ID.String(),
-		ParticipantID:  e.ParticipantID.String(),
-		MarketOptionID: e.MarketOptionID.String(),
-		Amount:         e.Amount,
-		Odds:           e.Odds,
-		PotentialWin:   e.PotentialWin,
-		Status:         string(e.Status),
-		PlacedAt:       e.PlacedAt,
-		UpdatedAt:      e.UpdatedAt,
+		ID:                 e.ID.String(),
+		ParticipantID:      e.ParticipantID.String(),
+		MarketOptionID:     e.MarketOptionID.String(),
+		Amount:             e.Amount,
+		Odds:               e.Odds,
+		PotentialWin:       e.PotentialWin,
+		Status:             string(e.Status),
+		PlacedAt:           e.PlacedAt,
+		UpdatedAt:          e.UpdatedAt,
+		IsBonusBet:         e.IsBonusBet,
+		ParticipantBonusID: bonusID,
+	}
+}
+
+func EntityToParticipantBonusModel(e *entity.ParticipantBonus) *model.ParticipantBonusModel {
+	return &model.ParticipantBonusModel{
+		ID:            e.ID.String(),
+		LeagueID:      e.LeagueID.String(),
+		ParticipantID: e.ParticipantID.String(),
+		Amount:        e.Amount,
+		Status:        string(e.Status),
+		CreatedAt:     e.CreatedAt,
+		UpdatedAt:     e.UpdatedAt,
 	}
 }

@@ -21,4 +21,6 @@ type LeagueRepository interface {
 	GetParticipant(ctx context.Context, leagueID, userID uuid.UUID) (*entity.Participant, error)
 	GetParticipantByID(ctx context.Context, id uuid.UUID) (*entity.Participant, error)
 	UpdateParticipant(ctx context.Context, p *entity.Participant) error
+	CreateParticipantBonuses(ctx context.Context, bonuses []*entity.ParticipantBonus) error
+	GetPendingBonuses(ctx context.Context, participantID uuid.UUID) ([]*entity.ParticipantBonus, error)
 }
