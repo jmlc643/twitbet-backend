@@ -16,6 +16,7 @@ const (
 	BetStatusWon      BetStatus = "WON"
 	BetStatusLost     BetStatus = "LOST"
 	BetStatusVoided   BetStatus = "VOIDED"
+	BetStatusCashout  BetStatus = "CASHOUT"
 )
 
 type Bet struct {
@@ -56,9 +57,10 @@ type BetDetail struct {
 	PotentialWin float64
 	Status       BetStatus
 	PlacedAt     time.Time
-	MatchTitle   string
-	MarketID     uuid.UUID
-	MarketName   string
-	OptionID     uuid.UUID
-	OptionName   string
+	MatchTitle    string
+	MarketID      uuid.UUID
+	MarketName    string
+	OptionID      uuid.UUID
+	OptionName    string
+	CashoutAmount *float64
 }

@@ -10,6 +10,7 @@ import (
 
 type BetRepository interface {
 	PlaceBetAtomic(ctx context.Context, bet *entity.Bet, transaction *entity.Transaction) error
+	CashoutAtomic(ctx context.Context, bet *entity.Bet, transaction *entity.Transaction) error
 	GetBetByID(ctx context.Context, id uuid.UUID) (*entity.Bet, error)
 	UpdateBetStatus(ctx context.Context, id uuid.UUID, status entity.BetStatus) error
 	ResolveMarketAtomic(ctx context.Context, marketID uuid.UUID, winningOptionID uuid.UUID) error

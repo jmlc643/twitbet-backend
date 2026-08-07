@@ -51,5 +51,12 @@ func (uc *GetUserBetsUseCase) Execute(ctx context.Context, userID, leagueID uuid
 		bets = []entity.BetDetail{}
 	}
 
+	for i := range bets {
+		if bets[i].Status == entity.BetStatusAccepted || bets[i].Status == entity.BetStatusPending {
+			ca := bets[i].Amount * 0.95
+			bets[i].CashoutAmount = &ca
+		}
+	}
+
 	return bets, total, nil
 }

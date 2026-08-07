@@ -19,5 +19,6 @@ type LeagueRepository interface {
 	DeleteLeague(ctx context.Context, id uuid.UUID) error
 	GetParticipantsByLeagueID(ctx context.Context, id uuid.UUID) ([]entity.ParticipantRanking, error)
 	GetParticipant(ctx context.Context, leagueID, userID uuid.UUID) (*entity.Participant, error)
+	GetParticipantByID(ctx context.Context, id uuid.UUID) (*entity.Participant, error)
 	UpdateParticipant(ctx context.Context, p *entity.Participant) error
 }
