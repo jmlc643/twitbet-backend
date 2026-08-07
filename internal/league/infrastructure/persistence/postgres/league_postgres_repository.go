@@ -341,3 +341,37 @@ func (r *LeagueRepository) UpdateParticipant(ctx context.Context, p *entity.Part
 	pModel := mapper.EntityToParticipantModel(p)
 	return r.db.WithContext(ctx).Save(pModel).Error
 }
+
+func (r *LeagueRepository) CreateParticipantBonuses(ctx context.Context, bonuses []*entity.ParticipantBonus) error {
+	if len(bonuses) == 0 {
+		return nil
+	}
+	var models []*model.ParticipantBonusModel
+	for _, b := range bonuses {
+		models = append(models, mapper.EntityToParticipantBonusModel(b))
+	}
+	return r.db.WithContext(ctx).Create(&models).Error
+}
+
+func (r *LeagueRepository) GetPendingBonuses(ctx context.Context, participantID uuid.UUID) ([]*entity.ParticipantBonus, error) {
+	var models []model.ParticipantBonusModel
+	err := r.db.WithContext(ctx).Where("participant_id = ? AND status = ?", participantID.String(), string(entity.BonusStatusPending)).Order("created_at asc").Find(&models).Error
+	if err != nil {
+		return nil, err
+	}
+	var bonuses []*entity.ParticipantBonus
+	for _, m := range models {
+		id, _ := uuid.Parse(m.ID)
+		leagueID, _ := uuid.Parse(m.LeagueID)
+		bonuses = append(bonuses, &entity.ParticipantBonus{
+			ID:            id,
+			LeagueID:      leagueID,
+			ParticipantID: participantID,
+			Amount:        m.Amount,
+			Status:        entity.BonusStatus(m.Status),
+			CreatedAt:     m.CreatedAt,
+			UpdatedAt:     m.UpdatedAt,
+		})
+	}
+	return bonuses, nil
+}

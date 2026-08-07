@@ -25,6 +25,7 @@ type GetLeagueDetailsOutput struct {
 	IsRankingVisible bool
 	InviteCode       string
 	CreatedAt        string
+	ParticipantsCount int
 	Participants     []ParticipantRankingOutput
 }
 

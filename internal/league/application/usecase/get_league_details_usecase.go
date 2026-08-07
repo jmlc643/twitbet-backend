@@ -31,6 +31,8 @@ func (uc *GetLeagueDetailsUseCase) Execute(ctx context.Context, in input.GetLeag
 		return output.GetLeagueDetailsOutput{}, err
 	}
 
+	participantCount := len(participants)
+
 	if league.HideStandings && in.UserID != league.OwnerID {
 		participants = nil
 	}
@@ -45,6 +47,7 @@ func (uc *GetLeagueDetailsUseCase) Execute(ctx context.Context, in input.GetLeag
 		IsRankingVisible: !league.HideStandings,
 		InviteCode:       league.InviteCode,
 		CreatedAt:        league.CreatedAt.Format("01/02/2006"),
+		ParticipantsCount: participantCount,
 		Participants:     output.EntityToParticipantRankingOutput(participants),
 	}, nil
 }

@@ -27,7 +27,7 @@ func NewPlaceBetUseCase(betRepo repository.BetRepository, leagueRepo repository.
 	}
 }
 
-func (uc *PlaceBetUseCase) Execute(ctx context.Context, userID, leagueID, marketID, marketOptionID uuid.UUID, amount float64) (*entity.Bet, error) {
+func (uc *PlaceBetUseCase) Execute(ctx context.Context, userID, leagueID, marketID, marketOptionID uuid.UUID, amount float64, bonusID *uuid.UUID) (*entity.Bet, error) {
 	isParticipant, err := uc.leagueRepo.IsParticipant(ctx, leagueID, userID)
 	if err != nil {
 		return nil, err
@@ -75,7 +75,7 @@ func (uc *PlaceBetUseCase) Execute(ctx context.Context, userID, leagueID, market
 		return nil, apperror.ErrMarketOptionNotFound
 	}
 
-	bet, err := entity.NewBet(participantID, marketOptionID, amount, optionOdds)
+	bet, err := entity.NewBet(participantID, marketOptionID, amount, optionOdds, bonusID)
 	if err != nil {
 		return nil, err
 	}

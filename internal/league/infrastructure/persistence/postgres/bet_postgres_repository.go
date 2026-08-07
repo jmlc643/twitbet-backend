@@ -36,13 +36,32 @@ func (r *BetRepository) PlaceBetAtomic(ctx context.Context, bet *entity.Bet, tra
 		return err
 	}
 
-	if participant.Balance < bet.Amount {
-		return apperror.ErrInsufficientBalance
-	}
-
-	participant.Balance -= bet.Amount
-	if err := tx.Save(&participant).Error; err != nil {
-		return err
+	if bet.IsBonusBet {
+		if bet.ParticipantBonusID == nil {
+			return errors.New("bonus id is missing for bonus bet")
+		}
+		var bonus model.ParticipantBonusModel
+		if err := tx.Set("gorm:query_option", "FOR UPDATE").Where("id = ?", bet.ParticipantBonusID.String()).First(&bonus).Error; err != nil {
+			return err
+		}
+		if bonus.Status != string(entity.BonusStatusPending) {
+			return errors.New("bonus is not pending")
+		}
+		if bonus.Amount != bet.Amount {
+			return errors.New("bet amount does not match bonus amount")
+		}
+		bonus.Status = string(entity.BonusStatusUsed)
+		if err := tx.Save(&bonus).Error; err != nil {
+			return err
+		}
+	} else {
+		if participant.Balance < bet.Amount {
+			return apperror.ErrInsufficientBalance
+		}
+		participant.Balance -= bet.Amount
+		if err := tx.Save(&participant).Error; err != nil {
+			return err
+		}
 	}
 
 	transactionModel := mapper.EntityToTransactionModel(transaction)
@@ -104,16 +123,24 @@ func (r *BetRepository) GetBetByID(ctx context.Context, id uuid.UUID) (*entity.B
 	participantID, _ := uuid.Parse(betModel.ParticipantID)
 	marketOptionID, _ := uuid.Parse(betModel.MarketOptionID)
 
+	var bonusID *uuid.UUID
+	if betModel.ParticipantBonusID != nil {
+		id, _ := uuid.Parse(*betModel.ParticipantBonusID)
+		bonusID = &id
+	}
+
 	return &entity.Bet{
-		ID:             id,
-		ParticipantID:  participantID,
-		MarketOptionID: marketOptionID,
-		Amount:         betModel.Amount,
-		Odds:           betModel.Odds,
-		PotentialWin:   betModel.PotentialWin,
-		Status:         entity.BetStatus(betModel.Status),
-		PlacedAt:       betModel.PlacedAt,
-		UpdatedAt:      betModel.UpdatedAt,
+		ID:                 id,
+		ParticipantID:      participantID,
+		MarketOptionID:     marketOptionID,
+		Amount:             betModel.Amount,
+		Odds:               betModel.Odds,
+		PotentialWin:       betModel.PotentialWin,
+		Status:             entity.BetStatus(betModel.Status),
+		PlacedAt:           betModel.PlacedAt,
+		UpdatedAt:          betModel.UpdatedAt,
+		IsBonusBet:         betModel.IsBonusBet,
+		ParticipantBonusID: bonusID,
 	}, nil
 }
 
@@ -172,7 +199,12 @@ func (r *BetRepository) ResolveMarketAtomic(ctx context.Context, marketID uuid.U
 				return err
 			}
 
-			participant.Balance += bet.PotentialWin
+			winAmount := bet.PotentialWin
+			if bet.IsBonusBet {
+				winAmount = bet.PotentialWin - bet.Amount
+			}
+
+			participant.Balance += winAmount
 			if err := tx.Save(&participant).Error; err != nil {
 				return err
 			}
@@ -181,7 +213,7 @@ func (r *BetRepository) ResolveMarketAtomic(ctx context.Context, marketID uuid.U
 				ID:        uuid.New().String(),
 				LeagueID:  market.LeagueID,
 				UserID:    participant.UserID,
-				Amount:    bet.PotentialWin,
+				Amount:    winAmount,
 				Type:      string(entity.TransactionTypeWin),
 			}
 			if err := tx.Create(txModel).Error; err != nil {
@@ -199,17 +231,19 @@ func (r *BetRepository) ResolveMarketAtomic(ctx context.Context, marketID uuid.U
 
 func (r *BetRepository) GetBetsByParticipantID(ctx context.Context, participantID uuid.UUID, status *entity.BetStatus, startDate, endDate *time.Time, limit, offset int) ([]entity.BetDetail, int64, error) {
 	var results []struct {
-		ID           string
-		Amount       float64
-		Odds         float64
-		PotentialWin float64
-		Status       string
-		PlacedAt     time.Time
-		MatchTitle   string
-		MarketID     string
-		MarketName   string
-		OptionID     string
-		OptionName   string
+		ID                 string
+		Amount             float64
+		Odds               float64
+		PotentialWin       float64
+		Status             string
+		PlacedAt           time.Time
+		MatchTitle         string
+		MarketID           string
+		MarketName         string
+		OptionID           string
+		OptionName         string
+		IsBonusBet         bool
+		ParticipantBonusID *string
 	}
 
 	baseQuery := r.db.WithContext(ctx).Table("bets").
@@ -235,7 +269,8 @@ func (r *BetRepository) GetBetsByParticipantID(ctx context.Context, participantI
 
 	query := baseQuery.
 		Select(`bets.id, bets.amount, bets.odds, bets.potential_win, bets.status, bets.placed_at,
-		        matches.title as match_title, markets.id as market_id, markets.name as market_name, market_options.id as option_id, market_options.name as option_name`).
+		        matches.title as match_title, markets.id as market_id, markets.name as market_name, market_options.id as option_id, market_options.name as option_name,
+				bets.is_bonus_bet, bets.participant_bonus_id`).
 		Order("bets.placed_at DESC")
 
 	if limit > 0 {
@@ -255,18 +290,26 @@ func (r *BetRepository) GetBetsByParticipantID(ctx context.Context, participantI
 		marketID, _ := uuid.Parse(row.MarketID)
 		optionID, _ := uuid.Parse(row.OptionID)
 		
+		var bonusID *uuid.UUID
+		if row.ParticipantBonusID != nil {
+			parsedID, _ := uuid.Parse(*row.ParticipantBonusID)
+			bonusID = &parsedID
+		}
+
 		betDetails = append(betDetails, entity.BetDetail{
-			ID:           id,
-			Amount:       row.Amount,
-			Odds:         row.Odds,
-			PotentialWin: row.PotentialWin,
-			Status:       entity.BetStatus(row.Status),
-			PlacedAt:     row.PlacedAt,
-			MatchTitle:   row.MatchTitle,
-			MarketID:     marketID,
-			MarketName:   row.MarketName,
-			OptionID:     optionID,
-			OptionName:   row.OptionName,
+			ID:                 id,
+			Amount:             row.Amount,
+			Odds:               row.Odds,
+			PotentialWin:       row.PotentialWin,
+			Status:             entity.BetStatus(row.Status),
+			PlacedAt:           row.PlacedAt,
+			MatchTitle:         row.MatchTitle,
+			MarketID:           marketID,
+			MarketName:         row.MarketName,
+			OptionID:           optionID,
+			OptionName:         row.OptionName,
+			IsBonusBet:         row.IsBonusBet,
+			ParticipantBonusID: bonusID,
 		})
 	}
 

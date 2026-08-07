@@ -63,7 +63,17 @@ func (h *BetHandler) PlaceBet(c *gin.Context) {
 		return
 	}
 
-	bet, err := h.placeBetUseCase.Execute(c.Request.Context(), userID, leagueID, marketID, marketOptionID, req.Amount)
+	var bonusID *uuid.UUID
+	if req.BonusID != nil {
+		id, err := uuid.Parse(*req.BonusID)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid bonus id"})
+			return
+		}
+		bonusID = &id
+	}
+
+	bet, err := h.placeBetUseCase.Execute(c.Request.Context(), userID, leagueID, marketID, marketOptionID, req.Amount, bonusID)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return

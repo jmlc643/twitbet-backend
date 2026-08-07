@@ -82,6 +82,7 @@ func GetLeagueDetailsOutputToResponse(out output.GetLeagueDetailsOutput) respons
 		IsRankingVisible: out.IsRankingVisible,
 		InviteCode:       out.InviteCode,
 		CreatedAt:        out.CreatedAt,
+		ParticipantsCount: out.ParticipantsCount,
 		Participants:     participants,
 	}
 }

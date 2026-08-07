@@ -13,15 +13,18 @@ import (
 )
 
 type LeagueHandler struct {
-	createLeagueUC     *usecase.CreateLeagueUseCase
-	joinLeagueUC       *usecase.JoinLeagueUseCase
-	getUserLeaguesUC   *usecase.GetUserLeaguesUseCase
-	getLeagueDetailsUC *usecase.GetLeagueDetailsUseCase
-	updateLeagueUC     *usecase.UpdateLeagueUseCase
-	deleteLeagueUC     *usecase.DeleteLeagueUseCase
-	assignAdminUC      *usecase.AssignAdminUseCase
-	removeAdminUC      *usecase.RemoveAdminUseCase
-	getParticipantMeUC *usecase.GetParticipantMeUseCase
+	createLeagueUC          *usecase.CreateLeagueUseCase
+	joinLeagueUC            *usecase.JoinLeagueUseCase
+	getUserLeaguesUC        *usecase.GetUserLeaguesUseCase
+	getLeagueDetailsUC      *usecase.GetLeagueDetailsUseCase
+	updateLeagueUC          *usecase.UpdateLeagueUseCase
+	deleteLeagueUC          *usecase.DeleteLeagueUseCase
+	assignAdminUC           *usecase.AssignAdminUseCase
+	removeAdminUC           *usecase.RemoveAdminUseCase
+	getParticipantMeUC      *usecase.GetParticipantMeUseCase
+	rechargeBalanceUC       *usecase.RechargeBalanceUseCase
+	grantLeagueBonusUC      *usecase.GrantLeagueBonusUseCase
+	getPendingBonusesUC     *usecase.GetPendingBonusesUseCase
 }
 
 func NewLeagueHandler(
@@ -34,17 +37,23 @@ func NewLeagueHandler(
 	assignAdminUC *usecase.AssignAdminUseCase,
 	removeAdminUC *usecase.RemoveAdminUseCase,
 	getParticipantMeUC *usecase.GetParticipantMeUseCase,
+	rechargeBalanceUC *usecase.RechargeBalanceUseCase,
+	grantLeagueBonusUC *usecase.GrantLeagueBonusUseCase,
+	getPendingBonusesUC *usecase.GetPendingBonusesUseCase,
 ) *LeagueHandler {
 	return &LeagueHandler{
-		createLeagueUC:     createLeagueUC,
-		joinLeagueUC:       joinLeagueUC,
-		getUserLeaguesUC:   getUserLeaguesUC,
-		getLeagueDetailsUC: getLeagueDetailsUC,
-		updateLeagueUC:     updateLeagueUC,
-		deleteLeagueUC:     deleteLeagueUC,
-		assignAdminUC:      assignAdminUC,
-		removeAdminUC:      removeAdminUC,
-		getParticipantMeUC: getParticipantMeUC,
+		createLeagueUC:          createLeagueUC,
+		joinLeagueUC:            joinLeagueUC,
+		getUserLeaguesUC:        getUserLeaguesUC,
+		getLeagueDetailsUC:      getLeagueDetailsUC,
+		updateLeagueUC:          updateLeagueUC,
+		deleteLeagueUC:          deleteLeagueUC,
+		assignAdminUC:           assignAdminUC,
+		removeAdminUC:           removeAdminUC,
+		getParticipantMeUC:      getParticipantMeUC,
+		rechargeBalanceUC:       rechargeBalanceUC,
+		grantLeagueBonusUC:      grantLeagueBonusUC,
+		getPendingBonusesUC:     getPendingBonusesUC,
 	}
 }
 
@@ -300,3 +309,109 @@ func (h *LeagueHandler) GetParticipantMe(c *gin.Context) {
 
 	c.JSON(http.StatusOK, res)
 }
+
+func (h *LeagueHandler) RechargeBalance(c *gin.Context) {
+	leagueIDStr := c.Param("id")
+	leagueID, err := uuid.Parse(leagueIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID de liga inválido"})
+		return
+	}
+
+	userIDStr, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not authenticated"})
+		return
+	}
+	userID, err := uuid.Parse(userIDStr.(string))
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid user token"})
+		return
+	}
+
+	balance, recharges, err := h.rechargeBalanceUC.Execute(c.Request.Context(), userID, leagueID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, response.RechargeResponse{
+		Balance:           balance,
+		RechargesConsumed: recharges,
+	})
+}
+
+func (h *LeagueHandler) GrantBonus(c *gin.Context) {
+	leagueIDStr := c.Param("id")
+	leagueID, err := uuid.Parse(leagueIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID de liga inválido"})
+		return
+	}
+
+	userIDStr, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not authenticated"})
+		return
+	}
+	userID, err := uuid.Parse(userIDStr.(string))
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid user token"})
+		return
+	}
+
+	var req request.GrantBonusRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	err = h.grantLeagueBonusUC.Execute(c.Request.Context(), userID, leagueID, req.Amount)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.Status(http.StatusNoContent)
+}
+
+func (h *LeagueHandler) GetMyBonuses(c *gin.Context) {
+	leagueIDStr := c.Param("id")
+	leagueID, err := uuid.Parse(leagueIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID de liga inválido"})
+		return
+	}
+
+	userIDStr, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not authenticated"})
+		return
+	}
+	userID, err := uuid.Parse(userIDStr.(string))
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid user token"})
+		return
+	}
+
+	bonuses, err := h.getPendingBonusesUC.Execute(c.Request.Context(), userID, leagueID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	var res []response.ParticipantBonusResponse
+	for _, b := range bonuses {
+		res = append(res, response.ParticipantBonusResponse{
+			ID:        b.ID.String(),
+			Amount:    b.Amount,
+			Status:    string(b.Status),
+			CreatedAt: b.CreatedAt,
+		})
+	}
+	if res == nil {
+		res = []response.ParticipantBonusResponse{}
+	}
+
+	c.JSON(http.StatusOK, res)
+}
