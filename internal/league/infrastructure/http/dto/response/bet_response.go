@@ -23,8 +23,9 @@ type BetDetailResponse struct {
 	MatchTitle   string    `json:"match_title"`
 	MarketID     string    `json:"market_id"`
 	MarketName   string    `json:"market_name"`
-	OptionID     string    `json:"option_id"`
-	OptionName   string    `json:"option_name"`
+	OptionID      string    `json:"option_id"`
+	OptionName    string    `json:"option_name"`
+	CashoutAmount *float64  `json:"cashout_amount,omitempty"`
 }
 
 type PaginatedBetResponse struct {

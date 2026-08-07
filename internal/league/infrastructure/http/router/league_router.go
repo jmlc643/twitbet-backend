@@ -73,7 +73,8 @@ func RegisterRoutes(router *gin.Engine, db *gorm.DB, rdb *redis.Client, jwtSecre
 
 	placeBetUC := usecase.NewPlaceBetUseCase(betRepo, leagueRepo, matchRepo, marketPublisher)
 	getUserBetsUC := usecase.NewGetUserBetsUseCase(betRepo, leagueRepo)
-	betHandler := handler.NewBetHandler(placeBetUC, getUserBetsUC)
+	cashoutBetUC := usecase.NewCashoutBetUseCase(betRepo, leagueRepo)
+	betHandler := handler.NewBetHandler(placeBetUC, getUserBetsUC, cashoutBetUC)
 
 	tokenService := identityAdapter.NewJWTTokenService(jwtSecret)
 	authMiddleware := identityMiddleware.JWTMiddleware(tokenService)
@@ -123,6 +124,7 @@ func RegisterRoutes(router *gin.Engine, db *gorm.DB, rdb *redis.Client, jwtSecre
 		betRoutes.Use(authMiddleware)
 		{
 			betRoutes.POST("", betHandler.PlaceBet)
+			betRoutes.POST("/:id/cashout", betHandler.Cashout)
 		}
 	}
 }

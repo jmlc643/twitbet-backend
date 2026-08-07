@@ -58,6 +58,39 @@ func (r *BetRepository) PlaceBetAtomic(ctx context.Context, bet *entity.Bet, tra
 	return tx.Commit().Error
 }
 
+func (r *BetRepository) CashoutAtomic(ctx context.Context, bet *entity.Bet, transaction *entity.Transaction) error {
+	tx := r.db.WithContext(ctx).Begin()
+	if tx.Error != nil {
+		return tx.Error
+	}
+	defer tx.Rollback()
+
+	var participant model.ParticipantModel
+	if err := tx.Set("gorm:query_option", "FOR UPDATE").Where("id = ?", bet.ParticipantID.String()).First(&participant).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return errors.New("participant not found")
+		}
+		return err
+	}
+
+	participant.Balance += transaction.Amount
+	if err := tx.Save(&participant).Error; err != nil {
+		return err
+	}
+
+	transactionModel := mapper.EntityToTransactionModel(transaction)
+	if err := tx.Create(transactionModel).Error; err != nil {
+		return err
+	}
+
+	betModel := mapper.EntityToBetModel(bet)
+	if err := tx.Save(betModel).Error; err != nil {
+		return err
+	}
+
+	return tx.Commit().Error
+}
+
 func (r *BetRepository) GetBetByID(ctx context.Context, id uuid.UUID) (*entity.Bet, error) {
 	var betModel model.BetModel
 	err := r.db.WithContext(ctx).Where("id = ?", id.String()).First(&betModel).Error

@@ -16,12 +16,14 @@ import (
 type BetHandler struct {
 	placeBetUseCase    *usecase.PlaceBetUseCase
 	getUserBetsUseCase *usecase.GetUserBetsUseCase
+	cashoutBetUseCase  *usecase.CashoutBetUseCase
 }
 
-func NewBetHandler(placeBetUseCase *usecase.PlaceBetUseCase, getUserBetsUseCase *usecase.GetUserBetsUseCase) *BetHandler {
+func NewBetHandler(placeBetUseCase *usecase.PlaceBetUseCase, getUserBetsUseCase *usecase.GetUserBetsUseCase, cashoutBetUseCase *usecase.CashoutBetUseCase) *BetHandler {
 	return &BetHandler{
 		placeBetUseCase:    placeBetUseCase,
 		getUserBetsUseCase: getUserBetsUseCase,
+		cashoutBetUseCase:  cashoutBetUseCase,
 	}
 }
 
@@ -151,6 +153,7 @@ func (h *BetHandler) GetUserBets(c *gin.Context) {
 			MarketName:   b.MarketName,
 			OptionID:     b.OptionID.String(),
 			OptionName:   b.OptionName,
+			CashoutAmount: b.CashoutAmount,
 		})
 	}
 	if responses == nil {
@@ -165,4 +168,43 @@ func (h *BetHandler) GetUserBets(c *gin.Context) {
 			Limit: limit,
 		},
 	})
+}
+
+func (h *BetHandler) Cashout(c *gin.Context) {
+	betIDStr := c.Param("id")
+	betID, err := uuid.Parse(betIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid bet ID"})
+		return
+	}
+
+	userIDStr, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not authenticated"})
+		return
+	}
+	userID, err := uuid.Parse(userIDStr.(string))
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid user token"})
+		return
+	}
+
+	bet, err := h.cashoutBetUseCase.Execute(c.Request.Context(), userID, betID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	res := response.BetResponse{
+		ID:             bet.ID.String(),
+		ParticipantID:  bet.ParticipantID.String(),
+		MarketOptionID: bet.MarketOptionID.String(),
+		Amount:         bet.Amount,
+		Odds:           bet.Odds,
+		PotentialWin:   bet.PotentialWin,
+		Status:         string(bet.Status),
+		PlacedAt:       bet.PlacedAt,
+	}
+
+	c.JSON(http.StatusOK, res)
 }

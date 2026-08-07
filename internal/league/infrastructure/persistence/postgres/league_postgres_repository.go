@@ -314,6 +314,29 @@ func (r *LeagueRepository) GetParticipant(ctx context.Context, leagueID, userID 
 	}, nil
 }
 
+func (r *LeagueRepository) GetParticipantByID(ctx context.Context, id uuid.UUID) (*entity.Participant, error) {
+	var pModel model.ParticipantModel
+	err := r.db.WithContext(ctx).Where("id = ?", id.String()).First(&pModel).Error
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, nil
+		}
+		return nil, err
+	}
+	pID, _ := uuid.Parse(pModel.ID)
+	lID, _ := uuid.Parse(pModel.LeagueID)
+	uID, _ := uuid.Parse(pModel.UserID)
+	return &entity.Participant{
+		ID:                pID,
+		LeagueID:          lID,
+		UserID:            uID,
+		IsAdmin:           pModel.IsAdmin,
+		Balance:           pModel.Balance,
+		RechargesConsumed: pModel.RechargesConsumed,
+		JoinedAt:          pModel.JoinedAt,
+	}, nil
+}
+
 func (r *LeagueRepository) UpdateParticipant(ctx context.Context, p *entity.Participant) error {
 	pModel := mapper.EntityToParticipantModel(p)
 	return r.db.WithContext(ctx).Save(pModel).Error
