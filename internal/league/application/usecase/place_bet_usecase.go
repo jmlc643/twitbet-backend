@@ -114,6 +114,8 @@ func (uc *PlaceBetUseCase) Execute(ctx context.Context, userID, leagueID, market
 
 	_ = uc.marketPublisher.PublishOddsUpdated(ctx, market.ID, market.Options)
 
+	_ = uc.marketPublisher.PublishParticipantBalanceUpdated(ctx, participantID, leagueID, userID)
+
 	go func(bID uuid.UUID) {
 		time.Sleep(4 * time.Second)
 		bgCtx := context.Background()

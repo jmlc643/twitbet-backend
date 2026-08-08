@@ -20,10 +20,11 @@ type Market struct {
 	LeagueID  uuid.UUID
 	MatchID   *uuid.UUID
 	Name      string
-	Status    string
-	Options   []MarketOption
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	Status             string
+	CancellationReason *string
+	Options            []MarketOption
+	CreatedAt          time.Time
+	UpdatedAt          time.Time
 }
 
 type MarketOptionCreate struct {

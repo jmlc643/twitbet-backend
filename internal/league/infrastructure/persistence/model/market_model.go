@@ -7,9 +7,10 @@ type MarketModel struct {
 	LeagueID  string    `gorm:"type:uuid;not null;column:league_id"`
 	MatchID   *string   `gorm:"type:uuid;column:match_id"`
 	Name      string    `gorm:"type:varchar(200);not null;column:name"`
-	Status    string    `gorm:"type:varchar(50);not null;default:'OPEN';column:status"`
-	CreatedAt time.Time `gorm:"column:created_at"`
-	UpdatedAt time.Time `gorm:"column:updated_at"`
+	Status           string    `gorm:"type:varchar(50);not null;default:'OPEN';column:status"`
+	CancellationReason *string `gorm:"type:text;column:cancellation_reason"`
+	CreatedAt        time.Time `gorm:"column:created_at"`
+	UpdatedAt        time.Time `gorm:"column:updated_at"`
 
 	Options []MarketOptionModel `gorm:"foreignKey:MarketID"`
 }

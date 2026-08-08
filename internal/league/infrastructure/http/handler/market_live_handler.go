@@ -13,13 +13,15 @@ type MarketLiveHandler struct {
 	updateStatusUseCase  usecase.UpdateMarketStatusUseCase
 	updateOddsUseCase    usecase.UpdateMarketOddsUseCase
 	resolveMarketUseCase usecase.ResolveMarketUseCase
+	cancelMarketUseCase  usecase.CancelMarketUseCase
 }
 
-func NewMarketLiveHandler(updateStatusUseCase usecase.UpdateMarketStatusUseCase, updateOddsUseCase usecase.UpdateMarketOddsUseCase, resolveMarketUseCase usecase.ResolveMarketUseCase) *MarketLiveHandler {
+func NewMarketLiveHandler(updateStatusUseCase usecase.UpdateMarketStatusUseCase, updateOddsUseCase usecase.UpdateMarketOddsUseCase, resolveMarketUseCase usecase.ResolveMarketUseCase, cancelMarketUseCase usecase.CancelMarketUseCase) *MarketLiveHandler {
 	return &MarketLiveHandler{
 		updateStatusUseCase:  updateStatusUseCase,
 		updateOddsUseCase:    updateOddsUseCase,
 		resolveMarketUseCase: resolveMarketUseCase,
+		cancelMarketUseCase:  cancelMarketUseCase,
 	}
 }
 
@@ -127,4 +129,26 @@ func (h *MarketLiveHandler) ResolveMarket(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Mercado resuelto exitosamente"})
+}
+
+func (h *MarketLiveHandler) CancelMarket(c *gin.Context) {
+	marketIDStr := c.Param("id")
+	marketID, err := uuid.Parse(marketIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID de mercado inválido"})
+		return
+	}
+
+	var req request.CancelMarketRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Payload inválido o cancellation_reason faltante"})
+		return
+	}
+
+	if err := h.cancelMarketUseCase.Execute(c.Request.Context(), marketID, req.CancellationReason); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Mercado anulado exitosamente y saldo reembolsado"})
 }
