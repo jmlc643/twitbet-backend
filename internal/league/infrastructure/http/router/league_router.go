@@ -46,6 +46,9 @@ func RegisterRoutes(router *gin.Engine, db *gorm.DB, rdb *redis.Client, jwtSecre
 	updateMarketStatusUC := usecase.NewUpdateMarketStatusUseCase(matchRepo, leagueRepo, marketPublisher)
 	updateMarketOddsUC := usecase.NewUpdateMarketOddsUseCase(matchRepo, leagueRepo, marketPublisher)
 	resolveMarketUC := usecase.NewResolveMarketUseCase(betRepo, matchRepo, leagueRepo, marketPublisher)
+	cancelMarketUC := usecase.NewCancelMarketUseCase(betRepo, matchRepo, marketPublisher)
+
+	marketLiveHandler := handler.NewMarketLiveHandler(*updateMarketStatusUC, *updateMarketOddsUC, *resolveMarketUC, *cancelMarketUC)
 
 	// Handlers
 	leagueHandler := handler.NewLeagueHandler(
@@ -71,13 +74,8 @@ func RegisterRoutes(router *gin.Engine, db *gorm.DB, rdb *redis.Client, jwtSecre
 		getMatchDetailsUC,
 		updateMatchStatusUC,
 	)
-	marketLiveHandler := handler.NewMarketLiveHandler(
-		*updateMarketStatusUC,
-		*updateMarketOddsUC,
-		*resolveMarketUC,
-	)
-
 	placeBetUC := usecase.NewPlaceBetUseCase(betRepo, leagueRepo, matchRepo, marketPublisher)
+
 	getUserBetsUC := usecase.NewGetUserBetsUseCase(betRepo, leagueRepo)
 	cashoutBetUC := usecase.NewCashoutBetUseCase(betRepo, leagueRepo)
 	betHandler := handler.NewBetHandler(placeBetUC, getUserBetsUC, cashoutBetUC)
@@ -128,6 +126,7 @@ func RegisterRoutes(router *gin.Engine, db *gorm.DB, rdb *redis.Client, jwtSecre
 			marketRoutes.PATCH("/:id/status", marketLiveHandler.UpdateStatus)
 			marketRoutes.PATCH("/:id/odds", marketLiveHandler.UpdateOdds)
 			marketRoutes.POST("/:id/resolve", marketLiveHandler.ResolveMarket)
+			marketRoutes.POST("/:id/cancel", marketLiveHandler.CancelMarket)
 		}
 
 		betRoutes := api.Group("/bets")

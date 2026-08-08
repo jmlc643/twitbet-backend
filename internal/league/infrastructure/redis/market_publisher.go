@@ -114,3 +114,24 @@ func (p *marketPublisher) PublishMarketResolved(ctx context.Context, marketID uu
 	}
 	return p.client.Publish(ctx, "market_events", payload).Err()
 }
+
+type ParticipantBalanceEvent struct {
+	Type          string    `json:"type"`
+	ParticipantID uuid.UUID `json:"participant_id"`
+	LeagueID      uuid.UUID `json:"league_id"`
+	UserID        uuid.UUID `json:"user_id"`
+}
+
+func (p *marketPublisher) PublishParticipantBalanceUpdated(ctx context.Context, participantID uuid.UUID, leagueID uuid.UUID, userID uuid.UUID) error {
+	event := ParticipantBalanceEvent{
+		Type:          "PARTICIPANT_BALANCE_UPDATED",
+		ParticipantID: participantID,
+		LeagueID:      leagueID,
+		UserID:        userID,
+	}
+	payload, err := json.Marshal(event)
+	if err != nil {
+		return err
+	}
+	return p.client.Publish(ctx, "market_events", payload).Err()
+}

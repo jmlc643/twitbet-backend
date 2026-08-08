@@ -59,7 +59,7 @@ func (r *BetRepository) PlaceBetAtomic(ctx context.Context, bet *entity.Bet, tra
 			return apperror.ErrInsufficientBalance
 		}
 		participant.Balance -= bet.Amount
-		if err := tx.Save(&participant).Error; err != nil {
+		if err := tx.Model(&participant).Update("balance", participant.Balance).Error; err != nil {
 			return err
 		}
 	}
@@ -314,4 +314,84 @@ func (r *BetRepository) GetBetsByParticipantID(ctx context.Context, participantI
 	}
 
 	return betDetails, total, nil
+}
+
+func (r *BetRepository) CancelMarketAtomic(ctx context.Context, marketID uuid.UUID, reason string) error {
+	tx := r.db.WithContext(ctx).Begin()
+	if tx.Error != nil {
+		return tx.Error
+	}
+	defer tx.Rollback()
+
+	if err := tx.Model(&model.MarketModel{}).Where("id = ?", marketID.String()).
+		Updates(map[string]interface{}{
+			"status":              "CANCELLED",
+			"cancellation_reason": reason,
+			"updated_at":          gorm.Expr("NOW()"),
+		}).Error; err != nil {
+		return err
+	}
+
+	var options []model.MarketOptionModel
+	if err := tx.Where("market_id = ?", marketID.String()).Find(&options).Error; err != nil {
+		return err
+	}
+
+	var optionIDs []string
+	for _, opt := range options {
+		optionIDs = append(optionIDs, opt.ID)
+	}
+	if len(optionIDs) == 0 {
+		return tx.Commit().Error
+	}
+
+	var bets []model.BetModel
+	if err := tx.Where("market_option_id IN ? AND status IN (?, ?)", optionIDs, string(entity.BetStatusAccepted), string(entity.BetStatusPending)).Find(&bets).Error; err != nil {
+		return err
+	}
+
+	var market model.MarketModel
+	if err := tx.Where("id = ?", marketID.String()).First(&market).Error; err != nil {
+		return err
+	}
+
+	for _, bet := range bets {
+		if err := tx.Model(&bet).Updates(map[string]interface{}{
+			"status":     string(entity.BetStatusVoided),
+			"updated_at": gorm.Expr("NOW()"),
+		}).Error; err != nil {
+			return err
+		}
+
+		if bet.IsBonusBet && bet.ParticipantBonusID != nil {
+			if err := tx.Model(&model.ParticipantBonusModel{}).
+				Where("id = ?", *bet.ParticipantBonusID).
+				Update("status", string(entity.BonusStatusPending)).Error; err != nil {
+				return err
+			}
+		} else {
+			var participant model.ParticipantModel
+			if err := tx.Set("gorm:query_option", "FOR UPDATE").Where("id = ?", bet.ParticipantID).First(&participant).Error; err != nil {
+				return err
+			}
+			participant.Balance += bet.Amount
+			if err := tx.Model(&participant).Update("balance", participant.Balance).Error; err != nil {
+				return err
+			}
+
+			txModel := &model.TransactionModel{
+				ID:        uuid.New().String(),
+				LeagueID:  market.LeagueID,
+				UserID:    participant.UserID,
+				Amount:    bet.Amount,
+				Type:      string(entity.TransactionTypeRefund),
+				CreatedAt: time.Now().UTC(),
+			}
+			if err := tx.Create(txModel).Error; err != nil {
+				return err
+			}
+		}
+	}
+
+	return tx.Commit().Error
 }
