@@ -33,6 +33,8 @@ func RegisterRoutes(router *gin.Engine, db *gorm.DB, rdb *redis.Client, jwtSecre
 	rechargeBalanceUC := usecase.NewRechargeBalanceUseCase(leagueRepo)
 	grantLeagueBonusUC := usecase.NewGrantLeagueBonusUseCase(leagueRepo)
 	getPendingBonusesUC := usecase.NewGetPendingBonusesUseCase(leagueRepo)
+	updateLeagueStatusUC := usecase.NewUpdateLeagueStatusUseCase(leagueRepo)
+	getLeagueLeaderboardUC := usecase.NewGetLeagueLeaderboardUseCase(leagueRepo)
 
 	// Casos de uso de Partido y Mercado
 	createMatchUC := usecase.NewCreateMatchUseCase(leagueRepo, matchRepo)
@@ -64,6 +66,8 @@ func RegisterRoutes(router *gin.Engine, db *gorm.DB, rdb *redis.Client, jwtSecre
 		rechargeBalanceUC,
 		grantLeagueBonusUC,
 		getPendingBonusesUC,
+		updateLeagueStatusUC,
+		getLeagueLeaderboardUC,
 	)
 	matchHandler := handler.NewMatchHandler(
 		createMatchUC,
@@ -93,6 +97,7 @@ func RegisterRoutes(router *gin.Engine, db *gorm.DB, rdb *redis.Client, jwtSecre
 			leagueRoutes.POST("/join", leagueHandler.JoinLeague)
 			leagueRoutes.GET("/:id", leagueHandler.GetLeagueDetails)
 			leagueRoutes.PUT("/:id", leagueHandler.UpdateLeague)
+			leagueRoutes.PATCH("/:id/status", leagueHandler.UpdateLeagueStatus)
 			leagueRoutes.DELETE("/:id", leagueHandler.DeleteLeague)
 			leagueRoutes.POST("/:id/admins", leagueHandler.AssignAdmin)
 			leagueRoutes.DELETE("/:id/admins/:participant_id", leagueHandler.RemoveAdmin)
@@ -102,6 +107,8 @@ func RegisterRoutes(router *gin.Engine, db *gorm.DB, rdb *redis.Client, jwtSecre
 
 			leagueRoutes.POST("/:id/markets", matchHandler.CreateMarketForLeague)
 			leagueRoutes.GET("/:id/markets", matchHandler.GetLeagueMarkets)
+
+			leagueRoutes.GET("/:id/leaderboard", leagueHandler.GetLeagueLeaderboard)
 
 			leagueRoutes.GET("/:id/bets", betHandler.GetUserBets)
 			leagueRoutes.GET("/:id/me", leagueHandler.GetParticipantMe)

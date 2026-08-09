@@ -43,6 +43,10 @@ func (uc *UpdateLeagueUseCase) Execute(ctx context.Context, in input.UpdateLeagu
 		league.MaxRecharges = in.MaxRecharges
 	}
 	league.HideStandings = in.HideStandings
+	
+	if in.MinBetsToQualify >= 0 {
+		league.MinBetsToQualify = in.MinBetsToQualify
+	}
 
 	return uc.repo.UpdateLeague(ctx, league)
 }

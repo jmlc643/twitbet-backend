@@ -66,6 +66,8 @@ func (r *LeagueRepository) GetLeagueByInviteCode(ctx context.Context, code strin
 		InitialBalance: modelLeague.InitialBalance,
 		MaxRecharges:   modelLeague.MaxRecharges,
 		HideStandings:  modelLeague.HideStandings,
+		Status:         modelLeague.Status,
+		MinBetsToQualify: modelLeague.MinBetsToQualify,
 		InviteCode:     modelLeague.InviteCode,
 		CreatedAt:      modelLeague.CreatedAt,
 		UpdatedAt:      modelLeague.UpdatedAt,
@@ -174,6 +176,8 @@ func (r *LeagueRepository) GetLeagueByID(ctx context.Context, id uuid.UUID) (*en
 		InitialBalance: modelLeague.InitialBalance,
 		MaxRecharges:   modelLeague.MaxRecharges,
 		HideStandings:  modelLeague.HideStandings,
+		Status:         modelLeague.Status,
+		MinBetsToQualify: modelLeague.MinBetsToQualify,
 		InviteCode:     modelLeague.InviteCode,
 		CreatedAt:      modelLeague.CreatedAt,
 		UpdatedAt:      modelLeague.UpdatedAt,
@@ -201,6 +205,8 @@ func (r *LeagueRepository) GetLeagueBySlug(ctx context.Context, slug string) (*e
 		InitialBalance: modelLeague.InitialBalance,
 		MaxRecharges:   modelLeague.MaxRecharges,
 		HideStandings:  modelLeague.HideStandings,
+		Status:         modelLeague.Status,
+		MinBetsToQualify: modelLeague.MinBetsToQualify,
 		InviteCode:     modelLeague.InviteCode,
 		CreatedAt:      modelLeague.CreatedAt,
 		UpdatedAt:      modelLeague.UpdatedAt,
@@ -374,4 +380,68 @@ func (r *LeagueRepository) GetPendingBonuses(ctx context.Context, participantID 
 		})
 	}
 	return bonuses, nil
+}
+
+func (r *LeagueRepository) GetLeaderboard(ctx context.Context, id uuid.UUID) ([]entity.LeaderboardEntry, error) {
+	var results []struct {
+		ParticipantID string
+		UserID        string
+		Username      string
+		AvatarURL     *string
+		Balance       float64
+		IsAdmin       bool
+		OwnerID       string
+		BetsCount     int
+	}
+
+	query := `
+		SELECT 
+			p.id as participant_id,
+			p.user_id,
+			u.username,
+			u.avatar_url,
+			p.balance,
+			p.is_admin,
+			l.owner_id,
+			(SELECT COUNT(*) FROM bets b WHERE b.participant_id = p.id) as bets_count
+		FROM league_participants p
+		JOIN users u ON p.user_id = u.id
+		JOIN leagues l ON p.league_id = l.id
+		WHERE p.league_id = ?
+		ORDER BY p.balance DESC
+	`
+
+	err := r.db.WithContext(ctx).Raw(query, id.String()).Scan(&results).Error
+	if err != nil {
+		return nil, err
+	}
+
+	var leaderboard []entity.LeaderboardEntry
+	position := 1
+	for _, res := range results {
+		participantID, _ := uuid.Parse(res.ParticipantID)
+		userID, _ := uuid.Parse(res.UserID)
+
+		role := "MEMBER"
+		if res.IsAdmin {
+			role = "ADMIN"
+		}
+		if res.UserID == res.OwnerID {
+			role = "OWNER"
+		}
+
+		leaderboard = append(leaderboard, entity.LeaderboardEntry{
+			ParticipantID:  participantID,
+			UserID:         userID,
+			Username:       res.Username,
+			ProfilePicture: res.AvatarURL,
+			Balance:        res.Balance,
+			Position:       position,
+			Role:           role,
+			BetsCount:      res.BetsCount,
+		})
+		position++
+	}
+
+	return leaderboard, nil
 }

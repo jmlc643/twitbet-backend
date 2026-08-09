@@ -25,6 +25,8 @@ type LeagueHandler struct {
 	rechargeBalanceUC       *usecase.RechargeBalanceUseCase
 	grantLeagueBonusUC      *usecase.GrantLeagueBonusUseCase
 	getPendingBonusesUC     *usecase.GetPendingBonusesUseCase
+	updateLeagueStatusUC    *usecase.UpdateLeagueStatusUseCase
+	getLeagueLeaderboardUC  *usecase.GetLeagueLeaderboardUseCase
 }
 
 func NewLeagueHandler(
@@ -40,6 +42,8 @@ func NewLeagueHandler(
 	rechargeBalanceUC *usecase.RechargeBalanceUseCase,
 	grantLeagueBonusUC *usecase.GrantLeagueBonusUseCase,
 	getPendingBonusesUC *usecase.GetPendingBonusesUseCase,
+	updateLeagueStatusUC *usecase.UpdateLeagueStatusUseCase,
+	getLeagueLeaderboardUC *usecase.GetLeagueLeaderboardUseCase,
 ) *LeagueHandler {
 	return &LeagueHandler{
 		createLeagueUC:          createLeagueUC,
@@ -54,6 +58,8 @@ func NewLeagueHandler(
 		rechargeBalanceUC:       rechargeBalanceUC,
 		grantLeagueBonusUC:      grantLeagueBonusUC,
 		getPendingBonusesUC:     getPendingBonusesUC,
+		updateLeagueStatusUC:    updateLeagueStatusUC,
+		getLeagueLeaderboardUC:  getLeagueLeaderboardUC,
 	}
 }
 
@@ -211,6 +217,7 @@ func (h *LeagueHandler) UpdateLeague(c *gin.Context) {
 		InitialBalance: req.InitialBalance,
 		MaxRecharges:   req.MaxRecharges,
 		HideStandings:  req.HideStandings,
+		MinBetsToQualify: req.MinBetsToQualify,
 	}
 
 	err = h.updateLeagueUC.Execute(c.Request.Context(), in)
@@ -414,4 +421,86 @@ func (h *LeagueHandler) GetMyBonuses(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, res)
+}
+
+func (h *LeagueHandler) UpdateLeagueStatus(c *gin.Context) {
+	userIDStr, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "no autorizado"})
+		return
+	}
+
+	OwnerID, err := uuid.Parse(userIDStr.(string))
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "id de usuario inválido"})
+		return
+	}
+
+	leagueIDStr := c.Param("id")
+	leagueID, err := uuid.Parse(leagueIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "id de liga inválido"})
+		return
+	}
+
+	var req request.UpdateLeagueStatusRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	in := input.UpdateLeagueStatusInput{
+		LeagueID: leagueID,
+		OwnerID:  OwnerID,
+		Status:   req.Status,
+	}
+
+	err = h.updateLeagueStatusUC.Execute(c.Request.Context(), in)
+	if err != nil {
+		if err.Error() == "liga no encontrada" {
+			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+			return
+		}
+		if err.Error() == "solo el administrador puede modificar la liga" {
+			c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.Status(http.StatusNoContent)
+}
+
+func (h *LeagueHandler) GetLeagueLeaderboard(c *gin.Context) {
+	userIDStr, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "no autorizado"})
+		return
+	}
+
+	userID, err := uuid.Parse(userIDStr.(string))
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "id de usuario inválido"})
+		return
+	}
+
+	leagueIDStr := c.Param("id")
+	leagueID, err := uuid.Parse(leagueIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "id de liga inválido"})
+		return
+	}
+
+	output, err := h.getLeagueLeaderboardUC.Execute(c.Request.Context(), leagueID, userID)
+	if err != nil {
+		if err.Error() == "liga no encontrada" {
+			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, mapper.GetLeagueLeaderboardOutputToResponse(output))
 }

@@ -18,12 +18,14 @@ type League struct {
 	InitialBalance float64
 	MaxRecharges   int
 	HideStandings  bool
+	Status         string
+	MinBetsToQualify int
 	InviteCode     string
 	CreatedAt      time.Time
 	UpdatedAt      time.Time
 }
 
-func NewLeague(ownerID uuid.UUID, name string, initialBalance float64, maxRecharges int, hideStandings bool) (*League, error) {
+func NewLeague(ownerID uuid.UUID, name string, initialBalance float64, maxRecharges int, hideStandings bool, minBetsToQualify int) (*League, error) {
 	if name == "" {
 		return nil, apperror.ErrInvalidLeagueName
 	}
@@ -33,6 +35,10 @@ func NewLeague(ownerID uuid.UUID, name string, initialBalance float64, maxRechar
 
 	if maxRecharges <= 0 {
 		maxRecharges = 2
+	}
+	
+	if minBetsToQualify < 0 {
+		minBetsToQualify = 0
 	}
 
 	inviteCode, err := generateInviteCode(8)
@@ -50,6 +56,8 @@ func NewLeague(ownerID uuid.UUID, name string, initialBalance float64, maxRechar
 		InitialBalance: initialBalance,
 		MaxRecharges:   maxRecharges,
 		HideStandings:  hideStandings,
+		Status:         "ACTIVE",
+		MinBetsToQualify: minBetsToQualify,
 		InviteCode:     inviteCode,
 		CreatedAt:      now,
 		UpdatedAt:      now,

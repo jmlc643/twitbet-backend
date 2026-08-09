@@ -5,4 +5,5 @@ type UpdateLeagueRequest struct {
 	InitialBalance float64 `json:"initial_balance" binding:"required"`
 	MaxRecharges   int     `json:"max_recharges" binding:"required"`
 	HideStandings  bool    `json:"hide_standings"`
+	MinBetsToQualify int   `json:"min_bets_to_qualify"`
 }

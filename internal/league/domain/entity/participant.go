@@ -26,6 +26,17 @@ type ParticipantRanking struct {
 	Role          string
 }
 
+type LeaderboardEntry struct {
+	ParticipantID uuid.UUID
+	UserID        uuid.UUID
+	Username      string
+	ProfilePicture *string
+	Balance       float64
+	Position      int
+	Role          string
+	BetsCount     int
+}
+
 func NewParticipant(leagueID, userID uuid.UUID, balance float64, isAdmin bool) (*Participant, error) {
 	return &Participant{
 		ID:                uuid.New(),
