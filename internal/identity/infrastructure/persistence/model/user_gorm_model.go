@@ -13,6 +13,7 @@ type UserModel struct {
 	Email        string    `gorm:"type:varchar(255);uniqueIndex;not null"`
 	PasswordHash string    `gorm:"type:varchar(255);not null"`
 	AvatarURL    *string   `gorm:"type:varchar(255)"`
+	IsVerified   bool      `gorm:"default:false"`
 	CreatedAt    time.Time `gorm:"autoCreateTime"`
 }
 

@@ -10,6 +10,8 @@ type LeagueModel struct {
 	InitialBalance float64   `gorm:"type:numeric(12,2);not null;column:initial_balance"`
 	MaxRecharges   int       `gorm:"type:integer;not null;default:2;column:max_recharges"`
 	HideStandings  bool      `gorm:"type:boolean;not null;default:false;column:hide_standings"`
+	Status         string    `gorm:"type:varchar(20);not null;default:'ACTIVE';column:status"`
+	MinBetsToQualify int       `gorm:"type:integer;not null;default:0;column:min_bets_to_qualify"`
 	InviteCode     string    `gorm:"type:varchar(20);uniqueIndex;not null;column:invite_code"`
 	CreatedAt      time.Time `gorm:"column:created_at"`
 	UpdatedAt      time.Time `gorm:"column:updated_at"`

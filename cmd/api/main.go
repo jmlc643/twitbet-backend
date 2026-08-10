@@ -78,7 +78,7 @@ func main() {
 	
 	router.GET("/ws", websocket.ServeWs(hub, cfg.JWTSecret))
 
-	identityHTTP.RegisterRoutes(router, db, cfg.JWTSecret, cfg.CloudinaryURL)
+	identityHTTP.RegisterRoutes(router, db, rdb, cfg)
 	leagueHTTP.RegisterRoutes(router, db, rdb, cfg.JWTSecret)
 
 	log.Printf("Servidor corriendo en el puerto %s", cfg.Port)

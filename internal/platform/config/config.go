@@ -14,6 +14,11 @@ type Config struct {
 	JWTSecret     string
 	FrontendURL   string
 	CloudinaryURL string
+	SMTPHost      string
+	SMTPPort      string
+	SMTPUser      string
+	SMTPPass      string
+	SMTPSender    string
 }
 
 func LoadConfig() *Config {
@@ -28,6 +33,11 @@ func LoadConfig() *Config {
 		JWTSecret:     getEnv("JWT_SECRET", "default_secret"),
 		FrontendURL:   getEnv("FRONTEND_URL", "http://localhost:5173"),
 		CloudinaryURL: getEnv("CLOUDINARY_URL", ""),
+		SMTPHost:      getEnv("SMTP_HOST", "smtp.gmail.com"),
+		SMTPPort:      getEnv("SMTP_PORT", "587"),
+		SMTPUser:      getEnv("SMTP_USER", ""),
+		SMTPPass:      getEnv("SMTP_PASS", ""),
+		SMTPSender:    getEnv("SMTP_SENDER", "noreply@twitbet.com"),
 	}
 
 	if cfg.DatabaseURL == "" {

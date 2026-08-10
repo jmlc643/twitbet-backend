@@ -8,5 +8,6 @@ type User struct {
 	Email        string
 	PasswordHash string
 	AvatarURL    string
+	IsVerified   bool
 	CreatedAt    time.Time
 }

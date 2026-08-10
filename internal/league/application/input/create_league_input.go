@@ -8,4 +8,5 @@ type CreateLeagueInput struct {
 	InitialBalance float64
 	MaxRecharges   int
 	HideStandings  bool
+	MinBetsToQualify int
 }

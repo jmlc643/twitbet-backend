@@ -63,7 +63,9 @@ func (r *UserGormRepository) Update(ctx context.Context, user *entity.User) erro
 	dbModel := mapper.UserEntityToGORM(user)
 
 	updateData := map[string]interface{}{
-		"username": dbModel.Username,
+		"username":      dbModel.Username,
+		"password_hash": dbModel.PasswordHash,
+		"is_verified":   dbModel.IsVerified,
 	}
 
 	if dbModel.AvatarURL == nil {

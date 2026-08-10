@@ -14,6 +14,8 @@ func EntityToLeagueModel(e *entity.League) *model.LeagueModel {
 		InitialBalance: e.InitialBalance,
 		MaxRecharges:   e.MaxRecharges,
 		HideStandings:  e.HideStandings,
+		Status:         e.Status,
+		MinBetsToQualify: e.MinBetsToQualify,
 		InviteCode:     e.InviteCode,
 		CreatedAt:      e.CreatedAt,
 		UpdatedAt:      e.UpdatedAt,

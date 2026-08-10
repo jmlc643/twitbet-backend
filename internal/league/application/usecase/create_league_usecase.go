@@ -18,7 +18,7 @@ func NewCreateLeagueUseCase(repo repository.LeagueRepository) *CreateLeagueUseCa
 }
 
 func (uc *CreateLeagueUseCase) Execute(ctx context.Context, in input.CreateLeagueInput) (*output.CreateLeagueOutput, error) {
-	league, err := entity.NewLeague(in.OwnerID, in.Name, in.InitialBalance, in.MaxRecharges, in.HideStandings)
+	league, err := entity.NewLeague(in.OwnerID, in.Name, in.InitialBalance, in.MaxRecharges, in.HideStandings, in.MinBetsToQualify)
 	if err != nil {
 		return nil, err
 	}

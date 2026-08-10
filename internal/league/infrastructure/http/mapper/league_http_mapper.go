@@ -15,6 +15,7 @@ func CreateLeagueRequestToInput(req request.CreateLeagueRequest, OwnerID uuid.UU
 		InitialBalance: req.InitialBalance,
 		MaxRecharges:   req.MaxRecharges,
 		HideStandings:  req.HideStandings,
+		MinBetsToQualify: req.MinBetsToQualify,
 	}
 }
 
@@ -84,5 +85,31 @@ func GetLeagueDetailsOutputToResponse(out output.GetLeagueDetailsOutput) respons
 		CreatedAt:        out.CreatedAt,
 		ParticipantsCount: out.ParticipantsCount,
 		Participants:     participants,
+	}
+}
+
+func GetLeagueLeaderboardOutputToResponse(out *output.GetLeagueLeaderboardOutput) response.GetLeagueLeaderboardResponse {
+	var leaderboard []response.LeaderboardEntryResponse
+	for _, entry := range out.Leaderboard {
+		leaderboard = append(leaderboard, response.LeaderboardEntryResponse{
+			ParticipantID:  entry.ParticipantID.String(),
+			UserID:         entry.UserID.String(),
+			Username:       entry.Username,
+			ProfilePicture: entry.ProfilePicture,
+			Balance:        entry.Balance,
+			Position:       entry.Position,
+			Role:           entry.Role,
+			IsUnranked:     entry.IsUnranked,
+		})
+	}
+	if leaderboard == nil {
+		leaderboard = []response.LeaderboardEntryResponse{}
+	}
+	return response.GetLeagueLeaderboardResponse{
+		LeagueID:         out.LeagueID.String(),
+		Status:           out.Status,
+		HideStandings:    out.HideStandings,
+		MinBetsToQualify: out.MinBetsToQualify,
+		Leaderboard:      leaderboard,
 	}
 }
