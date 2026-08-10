@@ -16,6 +16,7 @@ type Match struct {
 	Status    string
 	CreatedAt time.Time
 	UpdatedAt time.Time
+	Markets   []Market
 }
 
 func NewMatch(leagueID uuid.UUID, title string, startTime time.Time) (*Match, error) {

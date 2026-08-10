@@ -124,7 +124,7 @@ func (r *matchRepository) GetMatchesByLeagueID(ctx context.Context, leagueID uui
 	if limit > 0 {
 		query = query.Limit(limit).Offset(offset)
 	}
-	query = query.Order("start_time ASC")
+	query = query.Order("CASE WHEN status = 'ACTIVE' THEN 1 WHEN status = 'SCHEDULED' THEN 2 WHEN status = 'FINISHED' THEN 3 ELSE 4 END ASC, start_time ASC")
 
 	if err := query.Find(&dbMatches).Error; err != nil {
 		return nil, 0, err
