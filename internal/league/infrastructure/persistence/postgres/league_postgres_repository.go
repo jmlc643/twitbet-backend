@@ -82,6 +82,7 @@ func (r *LeagueRepository) GetUserLeagues(ctx context.Context, userID uuid.UUID)
 		OwnerID          string
 		Balance          float64
 		ParticipantCount int
+		IsAdmin          bool
 	}
 
 	query := `
@@ -90,7 +91,8 @@ func (r *LeagueRepository) GetUserLeagues(ctx context.Context, userID uuid.UUID)
 			l.slug,
 			l.name, 
 			l.owner_id, 
-			p.balance, 
+			p.balance,
+			p.is_admin,
 			(SELECT COUNT(*) FROM league_participants p2 WHERE p2.league_id = l.id) as participant_count
 		FROM leagues l
 		JOIN league_participants p ON l.id = p.league_id
@@ -105,6 +107,9 @@ func (r *LeagueRepository) GetUserLeagues(ctx context.Context, userID uuid.UUID)
 	var summaries []entity.LeagueSummary
 	for _, res := range results {
 		role := entity.RoleMember
+		if res.IsAdmin {
+			role = entity.RoleAdmin
+		}
 		if res.OwnerID == userID.String() {
 			role = entity.RoleAdmin
 		}

@@ -84,6 +84,7 @@ func GetLeagueDetailsOutputToResponse(out output.GetLeagueDetailsOutput) respons
 		InviteCode:       out.InviteCode,
 		CreatedAt:        out.CreatedAt,
 		ParticipantsCount: out.ParticipantsCount,
+		UserRole:         out.UserRole,
 		Participants:     participants,
 	}
 }

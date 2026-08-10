@@ -21,5 +21,6 @@ type GetLeagueDetailsResponse struct {
 	InviteCode       string                       `json:"invite_code"`
 	CreatedAt        string                       `json:"created_at"`
 	ParticipantsCount int                         `json:"participants_count"`
+	UserRole         string                       `json:"user_role"`
 	Participants     []ParticipantRankingResponse `json:"participants"`
 }
