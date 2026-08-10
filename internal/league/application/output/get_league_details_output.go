@@ -26,6 +26,7 @@ type GetLeagueDetailsOutput struct {
 	InviteCode       string
 	CreatedAt        string
 	ParticipantsCount int
+	UserRole         string
 	Participants     []ParticipantRankingOutput
 }
 

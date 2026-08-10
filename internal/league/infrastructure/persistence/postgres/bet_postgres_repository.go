@@ -249,7 +249,7 @@ func (r *BetRepository) GetBetsByParticipantID(ctx context.Context, participantI
 	baseQuery := r.db.WithContext(ctx).Table("bets").
 		Joins("JOIN market_options ON bets.market_option_id = market_options.id").
 		Joins("JOIN markets ON market_options.market_id = markets.id").
-		Joins("JOIN matches ON markets.match_id = matches.id").
+		Joins("LEFT JOIN matches ON markets.match_id = matches.id").
 		Where("bets.participant_id = ?", participantID.String())
 
 	if status != nil {
@@ -269,7 +269,7 @@ func (r *BetRepository) GetBetsByParticipantID(ctx context.Context, participantI
 
 	query := baseQuery.
 		Select(`bets.id, bets.amount, bets.odds, bets.potential_win, bets.status, bets.placed_at,
-		        matches.title as match_title, markets.id as market_id, markets.name as market_name, market_options.id as option_id, market_options.name as option_name,
+		        COALESCE(matches.title, '') as match_title, markets.id as market_id, markets.name as market_name, market_options.id as option_id, market_options.name as option_name,
 				bets.is_bonus_bet, bets.participant_bonus_id`).
 		Order("bets.placed_at DESC")
 
