@@ -23,9 +23,9 @@ func RegisterRoutes(router *gin.Engine, db *gorm.DB, rdb *redis.Client, cfg *con
 	tokenService := adapter.NewJWTTokenService(cfg.JWTSecret)
 	otpRepo := adapter.NewRedisOTPRepository(rdb)
 
-	emailService, err := email.NewGomailService(cfg, "internal/platform/email/template")
+	emailService, err := email.NewResendService(cfg, "internal/platform/email/template")
 	if err != nil {
-		log.Fatalf("Falló la inicialización del servicio de email: %v", err)
+		log.Fatalf("Falló la inicialización del servicio de email (Resend): %v", err)
 	}
 
 	var storageService port.StorageService

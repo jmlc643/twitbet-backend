@@ -19,6 +19,7 @@ type Config struct {
 	SMTPUser      string
 	SMTPPass      string
 	SMTPSender    string
+	ResendAPIKey  string
 }
 
 func LoadConfig() *Config {
@@ -38,6 +39,7 @@ func LoadConfig() *Config {
 		SMTPUser:      getEnv("SMTP_USER", ""),
 		SMTPPass:      getEnv("SMTP_PASS", ""),
 		SMTPSender:    getEnv("SMTP_SENDER", "noreply@twitbet.com"),
+		ResendAPIKey:  getEnv("RESEND_API_KEY", ""),
 	}
 
 	if cfg.DatabaseURL == "" {
