@@ -26,5 +26,21 @@ func (uc *GetLeagueMatchesUseCase) Execute(ctx context.Context, leagueID uuid.UU
 		limit = 20
 	}
 	offset := (page - 1) * limit
-	return uc.matchRepo.GetMatchesByLeagueID(ctx, leagueID, limit, offset, status)
+	matches, total, err := uc.matchRepo.GetMatchesByLeagueID(ctx, leagueID, limit, offset, status)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	for i := range matches {
+		markets, err := uc.matchRepo.GetMarketsByMatchID(ctx, matches[i].ID)
+		if err == nil {
+			if len(markets) > 3 {
+				matches[i].Markets = markets[:3]
+			} else {
+				matches[i].Markets = markets
+			}
+		}
+	}
+
+	return matches, total, nil
 }
