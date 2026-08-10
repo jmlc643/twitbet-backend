@@ -17,6 +17,7 @@ func UserEntityToGORM(u *entity.User) *model.UserModel {
 		Email:        u.Email,
 		PasswordHash: u.PasswordHash,
 		AvatarURL:    avatar,
+		IsVerified:   u.IsVerified,
 		CreatedAt:    u.CreatedAt,
 	}
 }
@@ -37,6 +38,7 @@ func UserGORMToEntity(m *model.UserModel) *entity.User {
 		Email:        m.Email,
 		PasswordHash: m.PasswordHash,
 		AvatarURL:    avatar,
+		IsVerified:   m.IsVerified,
 		CreatedAt:    m.CreatedAt,
 	}
 }

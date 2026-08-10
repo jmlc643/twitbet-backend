@@ -62,3 +62,41 @@ func UpdateProfileRequestToInput(req request.UpdateProfileRequest, userID string
 		AvatarURL: req.AvatarURL,
 	}
 }
+
+func VerifyAccountRequestToInput(req request.VerifyAccountRequest) input.VerifyAccountInput {
+	return input.VerifyAccountInput{
+		Email:   req.Email,
+		OTPCode: req.OTPCode,
+	}
+}
+
+func ForgotPasswordRequestToInput(req request.ForgotPasswordRequest) input.ForgotPasswordInput {
+	return input.ForgotPasswordInput{
+		Email: req.Email,
+	}
+}
+
+func ResetPasswordRequestToInput(req request.ResetPasswordRequest) input.ResetPasswordInput {
+	return input.ResetPasswordInput{
+		Email:           req.Email,
+		OTPCode:         req.OTPCode,
+		NewPassword:     req.NewPassword,
+		ConfirmPassword: req.ConfirmPassword,
+	}
+}
+
+func ChangePasswordRequestToInput(req request.ChangePasswordRequest, userID string) input.ChangePasswordInput {
+	return input.ChangePasswordInput{
+		UserID:          userID,
+		OldPassword:     req.OldPassword,
+		NewPassword:     req.NewPassword,
+		ConfirmPassword: req.ConfirmPassword,
+	}
+}
+
+func VerifyResetOtpRequestToInput(req request.VerifyResetOtpRequest) input.VerifyResetOtpInput {
+	return input.VerifyResetOtpInput{
+		Email:   req.Email,
+		OTPCode: req.OTPCode,
+	}
+}

@@ -2,47 +2,59 @@ package usecase
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/jmlc643/twitbet-backend/internal/identity/application/input"
 	"github.com/jmlc643/twitbet-backend/internal/identity/application/output"
 	"github.com/jmlc643/twitbet-backend/internal/identity/domain/apperror"
-
 	"github.com/jmlc643/twitbet-backend/internal/identity/domain/port"
 	"github.com/jmlc643/twitbet-backend/internal/identity/domain/repository"
 )
 
-type LoginUseCase struct {
+type VerifyAccountUseCase struct {
 	userRepo     repository.UserRepository
-	hasher       port.PasswordHasher
+	otpRepo      port.OTPRepository
 	tokenService port.TokenService
 }
 
-func NewLoginUseCase(
+func NewVerifyAccountUseCase(
 	userRepo repository.UserRepository,
-	hasher port.PasswordHasher,
+	otpRepo port.OTPRepository,
 	tokenService port.TokenService,
-) *LoginUseCase {
-	return &LoginUseCase{
+) *VerifyAccountUseCase {
+	return &VerifyAccountUseCase{
 		userRepo:     userRepo,
-		hasher:       hasher,
+		otpRepo:      otpRepo,
 		tokenService: tokenService,
 	}
 }
 
-func (uc *LoginUseCase) Execute(ctx context.Context, in input.LoginInput) (*output.AuthOutput, error) {
+func (uc *VerifyAccountUseCase) Execute(ctx context.Context, in input.VerifyAccountInput) (*output.AuthOutput, error) {
 	user, err := uc.userRepo.FindByEmail(ctx, in.Email)
-
 	if err != nil || user == nil {
-		return nil, apperror.ErrInvalidCredentials
+		return nil, apperror.ErrUserNotFound
 	}
 
-	if err := uc.hasher.ComparePassword(in.Password, user.PasswordHash); err != nil {
-		return nil, apperror.ErrInvalidCredentials
+	if user.IsVerified {
+		return nil, apperror.ErrAlreadyVerified
 	}
 
-	if !user.IsVerified {
-		return nil, apperror.ErrAccountNotVerified
+	otpKey := fmt.Sprintf("verify:%s", user.Email)
+	savedOTP, err := uc.otpRepo.GetOTP(ctx, otpKey)
+	if err != nil || savedOTP == "" {
+		return nil, apperror.ErrOTPExpired
 	}
+
+	if savedOTP != in.OTPCode {
+		return nil, apperror.ErrOTPInvalid
+	}
+
+	user.IsVerified = true
+	if err := uc.userRepo.Update(ctx, user); err != nil {
+		return nil, apperror.ErrInternal
+	}
+
+	_ = uc.otpRepo.DeleteOTP(ctx, otpKey)
 
 	token, err := uc.tokenService.GenerateToken(user.ID, user.Email)
 	if err != nil {

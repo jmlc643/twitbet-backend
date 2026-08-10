@@ -2,11 +2,11 @@ package usecase
 
 import (
 	"context"
+	"fmt"
 	"math/rand"
 	"time"
 
 	"github.com/jmlc643/twitbet-backend/internal/identity/application/input"
-	"github.com/jmlc643/twitbet-backend/internal/identity/application/output"
 	"github.com/jmlc643/twitbet-backend/internal/identity/domain/apperror"
 	"github.com/jmlc643/twitbet-backend/internal/identity/domain/entity"
 	"github.com/jmlc643/twitbet-backend/internal/identity/domain/port"
@@ -17,17 +17,23 @@ type RegisterUseCase struct {
 	userRepo     repository.UserRepository
 	hasher       port.PasswordHasher
 	tokenService port.TokenService
+	otpRepo      port.OTPRepository
+	emailService port.EmailService
 }
 
 func NewRegisterUseCase(
 	repo repository.UserRepository,
 	hasher port.PasswordHasher,
 	tokenSvc port.TokenService,
+	otpRepo port.OTPRepository,
+	emailService port.EmailService,
 ) *RegisterUseCase {
 	return &RegisterUseCase{
 		userRepo:     repo,
 		hasher:       hasher,
 		tokenService: tokenSvc,
+		otpRepo:      otpRepo,
+		emailService: emailService,
 	}
 }
 
@@ -43,18 +49,23 @@ func getRandomAvatar() string {
 	return defaultAvatars[r.Intn(len(defaultAvatars))]
 }
 
-func (uc *RegisterUseCase) Execute(ctx context.Context, in input.RegisterInput) (*output.AuthOutput, error) {
+func generateOTP() string {
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	return fmt.Sprintf("%06d", r.Intn(1000000))
+}
+
+func (uc *RegisterUseCase) Execute(ctx context.Context, in input.RegisterInput) error {
 	existing, err := uc.userRepo.FindByEmail(ctx, in.Email)
 	if err != nil {
-		return nil, apperror.ErrInternal
+		return apperror.ErrInternal
 	}
 	if existing != nil {
-		return nil, apperror.ErrUserAlreadyExists
+		return apperror.ErrUserAlreadyExists
 	}
 
 	hashedPassword, err := uc.hasher.HashPassword(in.Password)
 	if err != nil {
-		return nil, apperror.ErrInternal
+		return apperror.ErrInternal
 	}
 
 	avatar := getRandomAvatar()
@@ -64,25 +75,26 @@ func (uc *RegisterUseCase) Execute(ctx context.Context, in input.RegisterInput) 
 		Email:        in.Email,
 		PasswordHash: hashedPassword,
 		AvatarURL:    avatar,
+		IsVerified:   false,
 	}
 
 	if err := uc.userRepo.Create(ctx, user); err != nil {
-		return nil, apperror.ErrInternal
+		return apperror.ErrInternal
 	}
 
-	token, err := uc.tokenService.GenerateToken(user.ID, user.Email)
-	if err != nil {
-		return nil, apperror.ErrInternal
+	otpCode := generateOTP()
+	otpKey := fmt.Sprintf("verify:%s", user.Email)
+	
+	if err := uc.otpRepo.SaveOTP(ctx, otpKey, otpCode, 10*time.Minute); err != nil {
+		fmt.Printf("Error saving OTP to Redis: %v\n", err)
+		return apperror.ErrInternal
 	}
 
-	return &output.AuthOutput{
-		Token: token,
-		User: output.UserOutput{
-			ID:        user.ID,
-			Username:  user.Username,
-			Email:     user.Email,
-			AvatarURL: user.AvatarURL,
-			CreatedAt: user.CreatedAt,
-		},
-	}, nil
+	go func() {
+		if err := uc.emailService.SendVerificationEmail(context.Background(), user.Email, otpCode); err != nil {
+			fmt.Printf("Error sending verification email to %s: %v\n", user.Email, err)
+		}
+	}()
+
+	return nil
 }
