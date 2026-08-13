@@ -6,6 +6,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jmlc643/twitbet-backend/internal/league/domain/apperror"
+	"github.com/jmlc643/twitbet-backend/internal/league/domain/entity"
 	"github.com/jmlc643/twitbet-backend/internal/league/domain/port"
 	"github.com/jmlc643/twitbet-backend/internal/league/domain/repository"
 )
@@ -29,7 +30,7 @@ func NewUpdateMarketStatusUseCase(
 }
 
 func (u *UpdateMarketStatusUseCase) Execute(ctx context.Context, marketID uuid.UUID, OwnerID uuid.UUID, newStatus string) error {
-	if newStatus != "ACTIVE" && newStatus != "SUSPENDED" {
+	if newStatus != string(entity.MarketStatusActive) && newStatus != string(entity.MarketStatusSuspended) {
 		return apperror.ErrInvalidMarketName
 	}
 

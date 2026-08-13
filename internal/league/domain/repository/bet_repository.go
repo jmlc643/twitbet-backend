@@ -13,7 +13,7 @@ type BetRepository interface {
 	CashoutAtomic(ctx context.Context, bet *entity.Bet, transaction *entity.Transaction) error
 	GetBetByID(ctx context.Context, id uuid.UUID) (*entity.Bet, error)
 	UpdateBetStatus(ctx context.Context, id uuid.UUID, status entity.BetStatus) error
-	ResolveMarketAtomic(ctx context.Context, marketID uuid.UUID, winningOptionID uuid.UUID) error
+	ResolveMarketAtomic(ctx context.Context, marketID uuid.UUID, winningOptionIDs []uuid.UUID) error
 	CancelMarketAtomic(ctx context.Context, marketID uuid.UUID, reason string) error
 	GetBetsByParticipantID(ctx context.Context, participantID uuid.UUID, status *entity.BetStatus, startDate, endDate *time.Time, limit, offset int) ([]entity.BetDetail, int64, error)
 }

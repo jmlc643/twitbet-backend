@@ -98,7 +98,7 @@ func (h *MatchHandler) CreateMarketForLeague(c *gin.Context) {
 		inputOptions = append(inputOptions, input.MarketOptionInput{Name: opt.Name, Odds: opt.Odds})
 	}
 
-	market, err := h.createMarketUseCase.Execute(c.Request.Context(), OwnerID, leagueID, nil, req.Name, inputOptions)
+	market, err := h.createMarketUseCase.Execute(c.Request.Context(), OwnerID, leagueID, nil, req.Name, req.Type, inputOptions)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -133,7 +133,7 @@ func (h *MatchHandler) CreateMarketForMatch(c *gin.Context) {
 		inputOptions = append(inputOptions, input.MarketOptionInput{Name: opt.Name, Odds: opt.Odds})
 	}
 
-	market, err := h.createMarketUseCase.Execute(c.Request.Context(), OwnerID, uuid.Nil, &matchID, req.Name, inputOptions)
+	market, err := h.createMarketUseCase.Execute(c.Request.Context(), OwnerID, uuid.Nil, &matchID, req.Name, req.Type, inputOptions)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

@@ -58,7 +58,7 @@ func (uc *PlaceBetUseCase) Execute(ctx context.Context, userID, leagueID, market
 	if err != nil {
 		return nil, err
 	}
-	if market == nil || market.Status != "OPEN" {
+	if market == nil || market.Status != string(entity.MarketStatusOpen) {
 		return nil, apperror.ErrMarketNotActive
 	}
 
@@ -66,6 +66,9 @@ func (uc *PlaceBetUseCase) Execute(ctx context.Context, userID, leagueID, market
 	var optionFound bool
 	for _, opt := range market.Options {
 		if opt.ID == marketOptionID {
+			if opt.IsBlocked() {
+				return nil, apperror.ErrMarketOptionBlocked
+			}
 			optionOdds = opt.CurrentOdds
 			optionFound = true
 			break

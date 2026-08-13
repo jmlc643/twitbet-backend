@@ -5,6 +5,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jmlc643/twitbet-backend/internal/league/domain/apperror"
+	"github.com/jmlc643/twitbet-backend/internal/league/domain/entity"
 	"github.com/jmlc643/twitbet-backend/internal/league/domain/port"
 	"github.com/jmlc643/twitbet-backend/internal/league/domain/repository"
 )
@@ -31,7 +32,7 @@ func (uc *CancelMarketUseCase) Execute(ctx context.Context, marketID uuid.UUID, 
 	if market == nil {
 		return apperror.ErrMarketNotFound
 	}
-	if market.Status != "OPEN" && market.Status != "SUSPENDED" {
+	if market.Status != string(entity.MarketStatusOpen) && market.Status != string(entity.MarketStatusSuspended) {
 		return apperror.ErrMarketNotActive
 	}
 

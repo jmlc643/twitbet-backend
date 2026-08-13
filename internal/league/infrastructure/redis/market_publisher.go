@@ -18,18 +18,80 @@ func NewMarketPublisher(client *redis.Client) port.MarketEventPublisher {
 	return &marketPublisher{client: client}
 }
 
-type MarketStatusEvent struct {
-	Type     string    `json:"type"`
-	MarketID uuid.UUID `json:"market_id"`
-	Status   string    `json:"status"`
-}
-
 type MarketOptionEventDTO struct {
 	ID          uuid.UUID `json:"id"`
 	MarketID    uuid.UUID `json:"market_id"`
 	Name        string    `json:"name"`
 	InitialOdds float64   `json:"initial_odds"`
 	CurrentOdds float64   `json:"current_odds"`
+	Status      string    `json:"status"`
+}
+
+func newMarketOptionDTO(opt entity.MarketOption) MarketOptionEventDTO {
+	status := opt.Status
+	if status == "" {
+		status = string(entity.MarketOptionStatusActive)
+	}
+	return MarketOptionEventDTO{
+		ID:          opt.ID,
+		MarketID:    opt.MarketID,
+		Name:        opt.Name,
+		InitialOdds: opt.InitialOdds,
+		CurrentOdds: opt.CurrentOdds,
+		Status:      status,
+	}
+}
+
+type MarketSnapshotEvent struct {
+	Type       string                 `json:"type"`
+	MarketID   uuid.UUID              `json:"market_id"`
+	LeagueID   uuid.UUID              `json:"league_id"`
+	MatchID    *uuid.UUID             `json:"match_id"`
+	Name       string                 `json:"name"`
+	MarketType string                 `json:"market_type"`
+	Status     string                 `json:"status"`
+	Options    []MarketOptionEventDTO `json:"options"`
+}
+
+func newMarketSnapshot(eventType string, market entity.Market) MarketSnapshotEvent {
+	options := make([]MarketOptionEventDTO, 0, len(market.Options))
+	for _, opt := range market.Options {
+		options = append(options, newMarketOptionDTO(opt))
+	}
+
+	return MarketSnapshotEvent{
+		Type:       eventType,
+		MarketID:   market.ID,
+		LeagueID:   market.LeagueID,
+		MatchID:    market.MatchID,
+		Name:       market.Name,
+		MarketType: market.Type,
+		Status:     market.Status,
+		Options:    options,
+	}
+}
+
+func (p *marketPublisher) publishSnapshot(ctx context.Context, payloadType string, market entity.Market) error {
+	event := newMarketSnapshot(payloadType, market)
+	payload, err := json.Marshal(event)
+	if err != nil {
+		return err
+	}
+	return p.client.Publish(ctx, "market_events", payload).Err()
+}
+
+func (p *marketPublisher) PublishMarketCreated(ctx context.Context, market entity.Market) error {
+	return p.publishSnapshot(ctx, "MARKET_CREATED", market)
+}
+
+func (p *marketPublisher) PublishMarketOptionsUpdated(ctx context.Context, market entity.Market) error {
+	return p.publishSnapshot(ctx, "MARKET_OPTIONS_UPDATED", market)
+}
+
+type MarketStatusEvent struct {
+	Type     string    `json:"type"`
+	MarketID uuid.UUID `json:"market_id"`
+	Status   string    `json:"status"`
 }
 
 type MarketOddsEvent struct {
@@ -54,13 +116,7 @@ func (p *marketPublisher) PublishMarketStatusChanged(ctx context.Context, market
 func (p *marketPublisher) PublishOddsUpdated(ctx context.Context, marketID uuid.UUID, options []entity.MarketOption) error {
 	dtoOptions := make([]MarketOptionEventDTO, 0, len(options))
 	for _, opt := range options {
-		dtoOptions = append(dtoOptions, MarketOptionEventDTO{
-			ID:          opt.ID,
-			MarketID:    opt.MarketID,
-			Name:        opt.Name,
-			InitialOdds: opt.InitialOdds,
-			CurrentOdds: opt.CurrentOdds,
-		})
+		dtoOptions = append(dtoOptions, newMarketOptionDTO(opt))
 	}
 
 	event := MarketOddsEvent{
@@ -95,18 +151,18 @@ func (p *marketPublisher) PublishMatchStatusChanged(ctx context.Context, matchID
 }
 
 type MarketResolvedEvent struct {
-	Type            string    `json:"type"`
-	MarketID        uuid.UUID `json:"market_id"`
-	LeagueID        uuid.UUID `json:"league_id"`
-	WinningOptionID uuid.UUID `json:"winning_option_id"`
+	Type             string      `json:"type"`
+	MarketID         uuid.UUID   `json:"market_id"`
+	LeagueID         uuid.UUID   `json:"league_id"`
+	WinningOptionIDs []uuid.UUID `json:"winning_option_ids"`
 }
 
-func (p *marketPublisher) PublishMarketResolved(ctx context.Context, marketID uuid.UUID, leagueID uuid.UUID, winningOptionID uuid.UUID) error {
+func (p *marketPublisher) PublishMarketResolved(ctx context.Context, marketID uuid.UUID, leagueID uuid.UUID, winningOptionIDs []uuid.UUID) error {
 	event := MarketResolvedEvent{
-		Type:            "MARKET_RESOLVED",
-		MarketID:        marketID,
-		LeagueID:        leagueID,
-		WinningOptionID: winningOptionID,
+		Type:             "MARKET_RESOLVED",
+		MarketID:         marketID,
+		LeagueID:         leagueID,
+		WinningOptionIDs: winningOptionIDs,
 	}
 	payload, err := json.Marshal(event)
 	if err != nil {

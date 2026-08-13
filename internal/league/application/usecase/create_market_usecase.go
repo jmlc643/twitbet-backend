@@ -6,23 +6,27 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jmlc643/twitbet-backend/internal/league/application/input"
+	"github.com/jmlc643/twitbet-backend/internal/league/domain/apperror"
 	"github.com/jmlc643/twitbet-backend/internal/league/domain/entity"
+	"github.com/jmlc643/twitbet-backend/internal/league/domain/port"
 	"github.com/jmlc643/twitbet-backend/internal/league/domain/repository"
 )
 
 type CreateMarketUseCase struct {
-	leagueRepo repository.LeagueRepository
-	matchRepo  repository.MatchRepository
+	leagueRepo      repository.LeagueRepository
+	matchRepo       repository.MatchRepository
+	marketPublisher port.MarketEventPublisher
 }
 
-func NewCreateMarketUseCase(leagueRepo repository.LeagueRepository, matchRepo repository.MatchRepository) *CreateMarketUseCase {
+func NewCreateMarketUseCase(leagueRepo repository.LeagueRepository, matchRepo repository.MatchRepository, marketPublisher port.MarketEventPublisher) *CreateMarketUseCase {
 	return &CreateMarketUseCase{
-		leagueRepo: leagueRepo,
-		matchRepo:  matchRepo,
+		leagueRepo:      leagueRepo,
+		matchRepo:       matchRepo,
+		marketPublisher: marketPublisher,
 	}
 }
 
-func (uc *CreateMarketUseCase) Execute(ctx context.Context, OwnerID, leagueID uuid.UUID, matchID *uuid.UUID, name string, options []input.MarketOptionInput) (*entity.Market, error) {
+func (uc *CreateMarketUseCase) Execute(ctx context.Context, OwnerID, leagueID uuid.UUID, matchID *uuid.UUID, name string, marketType string, options []input.MarketOptionInput) (*entity.Market, error) {
 	if leagueID == uuid.Nil && matchID != nil {
 		match, err := uc.matchRepo.GetMatchByID(ctx, *matchID)
 		if err != nil {
@@ -36,7 +40,7 @@ func (uc *CreateMarketUseCase) Execute(ctx context.Context, OwnerID, leagueID uu
 		return nil, err
 	}
 	if league.OwnerID != OwnerID {
-		return nil, errors.New("el usuario no es administrador de la liga")
+		return nil, apperror.ErrUnauthorized
 	}
 
 	if matchID != nil {
@@ -54,7 +58,7 @@ func (uc *CreateMarketUseCase) Execute(ctx context.Context, OwnerID, leagueID uu
 		entityOptions = append(entityOptions, entity.MarketOptionCreate{Name: opt.Name, Odds: opt.Odds})
 	}
 
-	market, err := entity.NewMarket(leagueID, matchID, name, entityOptions)
+	market, err := entity.NewMarket(leagueID, matchID, name, marketType, entityOptions)
 	if err != nil {
 		return nil, err
 	}
@@ -63,7 +67,7 @@ func (uc *CreateMarketUseCase) Execute(ctx context.Context, OwnerID, leagueID uu
 		return nil, err
 	}
 
+	_ = uc.marketPublisher.PublishMarketCreated(ctx, *market)
+
 	return market, nil
 }
-
-

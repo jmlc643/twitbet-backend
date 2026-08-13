@@ -7,7 +7,8 @@ type MarketModel struct {
 	LeagueID  string    `gorm:"type:uuid;not null;column:league_id"`
 	MatchID   *string   `gorm:"type:uuid;column:match_id"`
 	Name      string    `gorm:"type:varchar(200);not null;column:name"`
-	Status           string    `gorm:"type:varchar(50);not null;default:'OPEN';column:status"`
+	Type      string    `gorm:"type:varchar(50);not null;default:'OTHER';column:type"`
+	Status    string    `gorm:"type:varchar(50);not null;default:'OPEN';column:status"`
 	CancellationReason *string `gorm:"type:text;column:cancellation_reason"`
 	CreatedAt        time.Time `gorm:"column:created_at"`
 	UpdatedAt        time.Time `gorm:"column:updated_at"`
@@ -25,6 +26,7 @@ type MarketOptionModel struct {
 	Name        string  `gorm:"type:varchar(100);not null;column:name"`
 	InitialOdds float64 `gorm:"type:numeric(10,2);not null;column:initial_odds"`
 	CurrentOdds float64 `gorm:"type:numeric(10,2);not null;column:current_odds"`
+	Status      string  `gorm:"type:varchar(20);not null;default:'ACTIVE';column:status"`
 }
 
 func (MarketOptionModel) TableName() string {
