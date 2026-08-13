@@ -12,6 +12,7 @@ type MarketOptionResponse struct {
 	Name        string  `json:"name"`
 	InitialOdds float64 `json:"initial_odds"`
 	CurrentOdds float64 `json:"current_odds"`
+	Status      string  `json:"status"`
 }
 
 type MarketResponse struct {
@@ -19,6 +20,7 @@ type MarketResponse struct {
 	LeagueID  string                 `json:"league_id"`
 	MatchID   *string                `json:"match_id"`
 	Name      string                 `json:"name"`
+	Type      string                 `json:"type"`
 	Status    string                 `json:"status"`
 	Options   []MarketOptionResponse `json:"options"`
 	CreatedAt time.Time              `json:"created_at"`
@@ -34,12 +36,17 @@ func NewMarketResponse(market *entity.Market) MarketResponse {
 
 	options := make([]MarketOptionResponse, 0, len(market.Options))
 	for _, opt := range market.Options {
+		status := opt.Status
+		if status == "" {
+			status = string(entity.MarketOptionStatusActive)
+		}
 		options = append(options, MarketOptionResponse{
 			ID:          opt.ID.String(),
 			MarketID:    opt.MarketID.String(),
 			Name:        opt.Name,
 			InitialOdds: opt.InitialOdds,
 			CurrentOdds: opt.CurrentOdds,
+			Status:      status,
 		})
 	}
 
@@ -48,6 +55,7 @@ func NewMarketResponse(market *entity.Market) MarketResponse {
 		LeagueID:  market.LeagueID.String(),
 		MatchID:   matchID,
 		Name:      market.Name,
+		Type:      market.Type,
 		Status:    market.Status,
 		Options:   options,
 		CreatedAt: market.CreatedAt,

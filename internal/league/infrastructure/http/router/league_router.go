@@ -38,7 +38,7 @@ func RegisterRoutes(router *gin.Engine, db *gorm.DB, rdb *redis.Client, jwtSecre
 
 	// Casos de uso de Partido y Mercado
 	createMatchUC := usecase.NewCreateMatchUseCase(leagueRepo, matchRepo)
-	createMarketUC := usecase.NewCreateMarketUseCase(leagueRepo, matchRepo)
+	createMarketUC := usecase.NewCreateMarketUseCase(leagueRepo, matchRepo, marketPublisher)
 	getLeagueMatchesUC := usecase.NewGetLeagueMatchesUseCase(matchRepo)
 	getLeagueMarketsUC := usecase.NewGetLeagueMarketsUseCase(matchRepo)
 	getMatchMarketsUC := usecase.NewGetMatchMarketsUseCase(matchRepo)
@@ -49,8 +49,10 @@ func RegisterRoutes(router *gin.Engine, db *gorm.DB, rdb *redis.Client, jwtSecre
 	updateMarketOddsUC := usecase.NewUpdateMarketOddsUseCase(matchRepo, leagueRepo, marketPublisher)
 	resolveMarketUC := usecase.NewResolveMarketUseCase(betRepo, matchRepo, leagueRepo, marketPublisher)
 	cancelMarketUC := usecase.NewCancelMarketUseCase(betRepo, matchRepo, marketPublisher)
+	updateMarketOptionStatusUC := usecase.NewUpdateMarketOptionStatusUseCase(matchRepo, leagueRepo, marketPublisher)
+	addMarketOptionsUC := usecase.NewAddMarketOptionsUseCase(matchRepo, leagueRepo, marketPublisher)
 
-	marketLiveHandler := handler.NewMarketLiveHandler(*updateMarketStatusUC, *updateMarketOddsUC, *resolveMarketUC, *cancelMarketUC)
+	marketLiveHandler := handler.NewMarketLiveHandler(*updateMarketStatusUC, *updateMarketOddsUC, *resolveMarketUC, *cancelMarketUC, updateMarketOptionStatusUC, addMarketOptionsUC)
 
 	// Handlers
 	leagueHandler := handler.NewLeagueHandler(
@@ -134,6 +136,8 @@ func RegisterRoutes(router *gin.Engine, db *gorm.DB, rdb *redis.Client, jwtSecre
 			marketRoutes.PATCH("/:id/odds", marketLiveHandler.UpdateOdds)
 			marketRoutes.POST("/:id/resolve", marketLiveHandler.ResolveMarket)
 			marketRoutes.POST("/:id/cancel", marketLiveHandler.CancelMarket)
+			marketRoutes.POST("/:id/options", marketLiveHandler.AddOptions)
+			marketRoutes.PATCH("/:id/options/:option_id/status", marketLiveHandler.UpdateOptionStatus)
 		}
 
 		betRoutes := api.Group("/bets")

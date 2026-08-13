@@ -153,14 +153,14 @@ func (r *BetRepository) UpdateBetStatus(ctx context.Context, id uuid.UUID, statu
 		}).Error
 }
 
-func (r *BetRepository) ResolveMarketAtomic(ctx context.Context, marketID uuid.UUID, winningOptionID uuid.UUID) error {
+func (r *BetRepository) ResolveMarketAtomic(ctx context.Context, marketID uuid.UUID, winningOptionIDs []uuid.UUID) error {
 	tx := r.db.WithContext(ctx).Begin()
 	if tx.Error != nil {
 		return tx.Error
 	}
 	defer tx.Rollback()
 
-	if err := tx.Model(&model.MarketModel{}).Where("id = ?", marketID.String()).Update("status", "RESOLVED").Error; err != nil {
+	if err := tx.Model(&model.MarketModel{}).Where("id = ?", marketID.String()).Update("status", string(entity.MarketStatusResolved)).Error; err != nil {
 		return err
 	}
 
@@ -178,6 +178,11 @@ func (r *BetRepository) ResolveMarketAtomic(ctx context.Context, marketID uuid.U
 		return tx.Commit().Error
 	}
 
+	winningSet := make(map[string]bool, len(winningOptionIDs))
+	for _, id := range winningOptionIDs {
+		winningSet[id.String()] = true
+	}
+
 	var bets []model.BetModel
 	if err := tx.Where("market_option_id IN ? AND status = ?", optionIDs, string(entity.BetStatusAccepted)).Find(&bets).Error; err != nil {
 		return err
@@ -189,7 +194,7 @@ func (r *BetRepository) ResolveMarketAtomic(ctx context.Context, marketID uuid.U
 	}
 
 	for _, bet := range bets {
-		if bet.MarketOptionID == winningOptionID.String() {
+		if winningSet[bet.MarketOptionID] {
 			if err := tx.Model(&bet).Update("status", string(entity.BetStatusWon)).Error; err != nil {
 				return err
 			}
@@ -325,7 +330,7 @@ func (r *BetRepository) CancelMarketAtomic(ctx context.Context, marketID uuid.UU
 
 	if err := tx.Model(&model.MarketModel{}).Where("id = ?", marketID.String()).
 		Updates(map[string]interface{}{
-			"status":              "CANCELLED",
+			"status":              string(entity.MarketStatusCancelled),
 			"cancellation_reason": reason,
 			"updated_at":          gorm.Expr("NOW()"),
 		}).Error; err != nil {

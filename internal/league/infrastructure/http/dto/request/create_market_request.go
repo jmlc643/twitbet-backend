@@ -7,5 +7,6 @@ type MarketOptionRequest struct {
 
 type CreateMarketRequest struct {
 	Name    string                `json:"name" binding:"required"`
+	Type    string                `json:"type"`
 	Options []MarketOptionRequest `json:"options" binding:"required,min=2"`
 }

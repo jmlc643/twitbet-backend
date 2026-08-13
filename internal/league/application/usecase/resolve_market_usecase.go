@@ -5,6 +5,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jmlc643/twitbet-backend/internal/league/domain/apperror"
+	"github.com/jmlc643/twitbet-backend/internal/league/domain/entity"
 	"github.com/jmlc643/twitbet-backend/internal/league/domain/port"
 	"github.com/jmlc643/twitbet-backend/internal/league/domain/repository"
 )
@@ -25,7 +26,11 @@ func NewResolveMarketUseCase(betRepo repository.BetRepository, matchRepo reposit
 	}
 }
 
-func (uc *ResolveMarketUseCase) Execute(ctx context.Context, marketID, winningOptionID uuid.UUID) error {
+func (uc *ResolveMarketUseCase) Execute(ctx context.Context, marketID uuid.UUID, winningOptionIDs []uuid.UUID) error {
+	if len(winningOptionIDs) == 0 {
+		return apperror.ErrInvalidMarketOptions
+	}
+
 	market, err := uc.matchRepo.GetMarketByID(ctx, marketID)
 	if err != nil {
 		return err
@@ -33,33 +38,39 @@ func (uc *ResolveMarketUseCase) Execute(ctx context.Context, marketID, winningOp
 	if market == nil {
 		return apperror.ErrMarketNotFound
 	}
-	if market.Status == "RESOLVED" {
+	if entity.NotResolvableMarketStatus(market) {
 		return apperror.ErrMarketNotActive
 	}
 
-	var validOption bool
+	winningSet := make(map[string]bool, len(winningOptionIDs))
 	for _, opt := range market.Options {
-		if opt.ID == winningOptionID {
-			validOption = true
-			break
+		for _, wID := range winningOptionIDs {
+			if opt.ID == wID {
+				winningSet[wID.String()] = true
+				break
+			}
 		}
 	}
-	if !validOption {
-		return apperror.ErrMarketOptionNotFound
+	for _, wID := range winningOptionIDs {
+		if !winningSet[wID.String()] {
+			return apperror.ErrMarketOptionNotFound
+		}
 	}
 
-	err = uc.betRepo.ResolveMarketAtomic(ctx, marketID, winningOptionID)
+	err = uc.betRepo.ResolveMarketAtomic(ctx, marketID, winningOptionIDs)
 	if err != nil {
 		return err
 	}
 
-	_ = uc.marketPublisher.PublishMarketResolved(ctx, marketID, market.LeagueID, winningOptionID)
+	_ = uc.marketPublisher.PublishMarketResolved(ctx, marketID, market.LeagueID, winningOptionIDs)
 
-	_ = uc.marketPublisher.PublishMarketStatusChanged(ctx, marketID, "RESOLVED")
+	_ = uc.marketPublisher.PublishMarketStatusChanged(ctx, marketID, string(entity.MarketStatusResolved))
 
-	err = uc.matchRepo.UpdateMatchStatusAtomic(ctx, *market.MatchID, "FINISHED")
-	if err == nil {
-		_ = uc.marketPublisher.PublishMatchStatusChanged(ctx, *market.MatchID, "FINISHED")
+	if market.MatchID != nil {
+		err = uc.matchRepo.UpdateMatchStatusAtomic(ctx, *market.MatchID, "FINISHED")
+		if err == nil {
+			_ = uc.marketPublisher.PublishMatchStatusChanged(ctx, *market.MatchID, "FINISHED")
+		}
 	}
 
 	return nil

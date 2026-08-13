@@ -45,6 +45,7 @@ func (r *matchRepository) CreateMarket(ctx context.Context, market *entity.Marke
 		LeagueID:  market.LeagueID.String(),
 		MatchID:   matchID,
 		Name:      market.Name,
+		Type:      market.Type,
 		Status:    market.Status,
 		CreatedAt: market.CreatedAt,
 		UpdatedAt: market.UpdatedAt,
@@ -57,6 +58,7 @@ func (r *matchRepository) CreateMarket(ctx context.Context, market *entity.Marke
 			Name:        opt.Name,
 			InitialOdds: opt.InitialOdds,
 			CurrentOdds: opt.CurrentOdds,
+			Status:      optionStatusOrDefault(opt.Status),
 		})
 	}
 
@@ -151,7 +153,8 @@ func (r *matchRepository) GetMatchesByLeagueID(ctx context.Context, leagueID uui
 
 func (r *matchRepository) GetMarketsByLeagueID(ctx context.Context, leagueID uuid.UUID) ([]entity.Market, error) {
 	var dbMarkets []model.MarketModel
-	if err := r.db.WithContext(ctx).Preload("Options").Where("league_id = ? AND match_id IS NULL", leagueID.String()).Find(&dbMarkets).Error; err != nil {
+	if err := r.db.WithContext(ctx).Preload("Options").Where("league_id = ? AND match_id IS NULL", leagueID.String()).
+		Order(marketTypeOrderSQL()).Find(&dbMarkets).Error; err != nil {
 		return nil, err
 	}
 	return mapDBMarketsToEntity(dbMarkets), nil
@@ -159,7 +162,8 @@ func (r *matchRepository) GetMarketsByLeagueID(ctx context.Context, leagueID uui
 
 func (r *matchRepository) GetMarketsByMatchID(ctx context.Context, matchID uuid.UUID) ([]entity.Market, error) {
 	var dbMarkets []model.MarketModel
-	if err := r.db.WithContext(ctx).Preload("Options").Where("match_id = ?", matchID.String()).Find(&dbMarkets).Error; err != nil {
+	if err := r.db.WithContext(ctx).Preload("Options").Where("match_id = ?", matchID.String()).
+		Order(marketTypeOrderSQL()).Find(&dbMarkets).Error; err != nil {
 		return nil, err
 	}
 	return mapDBMarketsToEntity(dbMarkets), nil
@@ -189,6 +193,7 @@ func (r *matchRepository) UpdateMarket(ctx context.Context, market *entity.Marke
 		LeagueID:  market.LeagueID.String(),
 		MatchID:   matchID,
 		Name:      market.Name,
+		Type:      market.Type,
 		Status:    market.Status,
 		CreatedAt: market.CreatedAt,
 		UpdatedAt: market.UpdatedAt,
@@ -205,6 +210,7 @@ func (r *matchRepository) UpdateMarket(ctx context.Context, market *entity.Marke
 				Name:        opt.Name,
 				InitialOdds: opt.InitialOdds,
 				CurrentOdds: opt.CurrentOdds,
+				Status:      optionStatusOrDefault(opt.Status),
 			}
 			if err := tx.Save(dbOpt).Error; err != nil {
 				return err
@@ -212,6 +218,34 @@ func (r *matchRepository) UpdateMarket(ctx context.Context, market *entity.Marke
 		}
 		return nil
 	})
+}
+
+func (r *matchRepository) AddMarketOptions(ctx context.Context, marketID uuid.UUID, options []entity.MarketOption) error {
+	if len(options) == 0 {
+		return nil
+	}
+
+	dbOptions := make([]model.MarketOptionModel, 0, len(options))
+	for _, opt := range options {
+		dbOptions = append(dbOptions, model.MarketOptionModel{
+			ID:          opt.ID.String(),
+			MarketID:    marketID.String(),
+			Name:        opt.Name,
+			InitialOdds: opt.InitialOdds,
+			CurrentOdds: opt.CurrentOdds,
+			Status:      optionStatusOrDefault(opt.Status),
+		})
+	}
+
+	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		return tx.Create(&dbOptions).Error
+	})
+}
+
+func (r *matchRepository) UpdateMarketOptionStatus(ctx context.Context, marketID uuid.UUID, optionID uuid.UUID, newStatus string) error {
+	return r.db.WithContext(ctx).Model(&model.MarketOptionModel{}).
+		Where("id = ? AND market_id = ?", optionID.String(), marketID.String()).
+		Update("status", newStatus).Error
 }
 
 func (r *matchRepository) UpdateMatchStatusAtomic(ctx context.Context, matchID uuid.UUID, newStatus string) error {
@@ -316,6 +350,7 @@ func mapDBMarketsToEntity(dbMarkets []model.MarketModel) []entity.Market {
 				Name:        o.Name,
 				InitialOdds: o.InitialOdds,
 				CurrentOdds: o.CurrentOdds,
+				Status:      optionStatusOrDefault(o.Status),
 			})
 		}
 
@@ -324,6 +359,7 @@ func mapDBMarketsToEntity(dbMarkets []model.MarketModel) []entity.Market {
 			LeagueID:  lID,
 			MatchID:   matchID,
 			Name:      m.Name,
+			Type:      m.Type,
 			Status:    m.Status,
 			Options:   options,
 			CreatedAt: m.CreatedAt,
@@ -331,4 +367,20 @@ func mapDBMarketsToEntity(dbMarkets []model.MarketModel) []entity.Market {
 		})
 	}
 	return markets
+}
+
+func optionStatusOrDefault(status string) string {
+	if status == "" {
+		return string(entity.MarketOptionStatusActive)
+	}
+	return status
+}
+
+func marketTypeOrderSQL() string {
+	return "CASE markets.type " +
+		"WHEN 'RESULT' THEN 1 " +
+		"WHEN 'TOTALS' THEN 2 " +
+		"WHEN 'HANDICAP' THEN 3 " +
+		"WHEN 'CORRECT_SCORE' THEN 4 " +
+		"ELSE 5 END ASC, markets.created_at ASC"
 }

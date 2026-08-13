@@ -7,12 +7,60 @@ import (
 	"github.com/jmlc643/twitbet-backend/internal/league/domain/apperror"
 )
 
+type MarketType string
+
+const (
+	MarketTypeResult       MarketType = "RESULT"
+	MarketTypeTotals       MarketType = "TOTALS"
+	MarketTypeHandicap     MarketType = "HANDICAP"
+	MarketTypeCorrectScore MarketType = "CORRECT_SCORE"
+	MarketTypeOther        MarketType = "OTHER"
+)
+
+type MarketStatus string
+
+const (
+	MarketStatusOpen      MarketStatus = "OPEN"
+	MarketStatusActive    MarketStatus = "ACTIVE"
+	MarketStatusSuspended MarketStatus = "SUSPENDED"
+	MarketStatusResolved  MarketStatus = "RESOLVED"
+	MarketStatusCancelled MarketStatus = "CANCELLED"
+	MarketStatusVoided    MarketStatus = "VOIDED"
+)
+
+type MarketOptionStatus string
+
+const (
+	MarketOptionStatusActive  MarketOptionStatus = "ACTIVE"
+	MarketOptionStatusBlocked MarketOptionStatus = "BLOCKED"
+)
+
+func IsValidMarketType(marketType string) bool {
+	switch MarketType(marketType) {
+	case MarketTypeResult, MarketTypeTotals, MarketTypeHandicap, MarketTypeCorrectScore, MarketTypeOther:
+		return true
+	default:
+		return false
+	}
+}
+
+func NotResolvableMarketStatus(market *Market) bool {
+	return market.Status == string(MarketStatusResolved) ||
+		market.Status == string(MarketStatusCancelled) ||
+		market.Status == string(MarketStatusVoided)
+}
+
 type MarketOption struct {
 	ID          uuid.UUID
 	MarketID    uuid.UUID
 	Name        string
 	InitialOdds float64
 	CurrentOdds float64
+	Status      string
+}
+
+func (o *MarketOption) IsBlocked() bool {
+	return o.Status == string(MarketOptionStatusBlocked)
 }
 
 type Market struct {
@@ -20,11 +68,12 @@ type Market struct {
 	LeagueID  uuid.UUID
 	MatchID   *uuid.UUID
 	Name      string
-	Status             string
+	Type      string
+	Status    string
 	CancellationReason *string
-	Options            []MarketOption
-	CreatedAt          time.Time
-	UpdatedAt          time.Time
+	Options   []MarketOption
+	CreatedAt time.Time
+	UpdatedAt time.Time
 }
 
 type MarketOptionCreate struct {
@@ -32,12 +81,15 @@ type MarketOptionCreate struct {
 	Odds float64
 }
 
-func NewMarket(leagueID uuid.UUID, matchID *uuid.UUID, name string, options []MarketOptionCreate) (*Market, error) {
+func NewMarket(leagueID uuid.UUID, matchID *uuid.UUID, name string, marketType string, options []MarketOptionCreate) (*Market, error) {
 	if name == "" {
 		return nil, apperror.ErrInvalidMarketName
 	}
 	if len(options) < 2 {
 		return nil, apperror.ErrInvalidMarketOptions
+	}
+	if !IsValidMarketType(marketType) {
+		marketType = string(MarketTypeOther)
 	}
 
 	now := time.Now().UTC()
@@ -51,6 +103,7 @@ func NewMarket(leagueID uuid.UUID, matchID *uuid.UUID, name string, options []Ma
 			Name:        opt.Name,
 			InitialOdds: opt.Odds,
 			CurrentOdds: opt.Odds,
+			Status:      string(MarketOptionStatusActive),
 		})
 	}
 
@@ -59,9 +112,21 @@ func NewMarket(leagueID uuid.UUID, matchID *uuid.UUID, name string, options []Ma
 		LeagueID:  leagueID,
 		MatchID:   matchID,
 		Name:      name,
-		Status:    "OPEN",
+		Type:      marketType,
+		Status:    string(MarketStatusOpen),
 		Options:   marketOptions,
 		CreatedAt: now,
 		UpdatedAt: now,
 	}, nil
+}
+
+func NewMarketOption(marketID uuid.UUID, name string, odds float64) *MarketOption {
+	return &MarketOption{
+		ID:          uuid.New(),
+		MarketID:    marketID,
+		Name:        name,
+		InitialOdds: odds,
+		CurrentOdds: odds,
+		Status:      string(MarketOptionStatusActive),
+	}
 }
