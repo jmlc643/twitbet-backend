@@ -153,11 +153,13 @@ func (h *MatchHandler) GetMatches(c *gin.Context) {
 	pageStr := c.Query("page")
 	limitStr := c.Query("limit")
 	status := c.Query("status")
+	includeAllMarketsStr := c.Query("include_all_markets")
+	includeAllMarkets := includeAllMarketsStr == "true"
 
 	page, _ := strconv.Atoi(pageStr)
 	limit, _ := strconv.Atoi(limitStr)
 
-	matches, total, err := h.getLeagueMatchesUseCase.Execute(c.Request.Context(), leagueID, page, limit, status)
+	matches, total, err := h.getLeagueMatchesUseCase.Execute(c.Request.Context(), leagueID, page, limit, status, includeAllMarkets)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

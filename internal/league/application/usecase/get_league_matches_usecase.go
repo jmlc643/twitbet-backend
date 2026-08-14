@@ -18,7 +18,7 @@ func NewGetLeagueMatchesUseCase(matchRepo repository.MatchRepository) *GetLeague
 	}
 }
 
-func (uc *GetLeagueMatchesUseCase) Execute(ctx context.Context, leagueID uuid.UUID, page, limit int, status string) ([]entity.Match, int64, error) {
+func (uc *GetLeagueMatchesUseCase) Execute(ctx context.Context, leagueID uuid.UUID, page, limit int, status string, includeAllMarkets bool) ([]entity.Match, int64, error) {
 	if page < 1 {
 		page = 1
 	}
@@ -34,10 +34,14 @@ func (uc *GetLeagueMatchesUseCase) Execute(ctx context.Context, leagueID uuid.UU
 	for i := range matches {
 		markets, err := uc.matchRepo.GetMarketsByMatchID(ctx, matches[i].ID)
 		if err == nil {
-			if len(markets) > 3 {
-				matches[i].Markets = markets[:3]
-			} else {
+			if includeAllMarkets {
 				matches[i].Markets = markets
+			} else {
+				if len(markets) > 3 {
+					matches[i].Markets = markets[:3]
+				} else {
+					matches[i].Markets = markets
+				}
 			}
 		}
 	}
