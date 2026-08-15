@@ -16,4 +16,5 @@ type LeagueSummary struct {
 	Role             LeagueRole
 	ParticipantCount int
 	Balance          float64
+	Status           string
 }

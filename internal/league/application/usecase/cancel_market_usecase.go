@@ -13,18 +13,20 @@ import (
 type CancelMarketUseCase struct {
 	betRepo         repository.BetRepository
 	matchRepo       repository.MatchRepository
+	leagueRepo      repository.LeagueRepository
 	marketPublisher port.MarketEventPublisher
 }
 
-func NewCancelMarketUseCase(betRepo repository.BetRepository, matchRepo repository.MatchRepository, marketPublisher port.MarketEventPublisher) *CancelMarketUseCase {
+func NewCancelMarketUseCase(betRepo repository.BetRepository, matchRepo repository.MatchRepository, leagueRepo repository.LeagueRepository, marketPublisher port.MarketEventPublisher) *CancelMarketUseCase {
 	return &CancelMarketUseCase{
 		betRepo:         betRepo,
 		matchRepo:       matchRepo,
+		leagueRepo:      leagueRepo,
 		marketPublisher: marketPublisher,
 	}
 }
 
-func (uc *CancelMarketUseCase) Execute(ctx context.Context, marketID uuid.UUID, reason string) error {
+func (uc *CancelMarketUseCase) Execute(ctx context.Context, marketID uuid.UUID, requesterID uuid.UUID, reason string) error {
 	market, err := uc.matchRepo.GetMarketByID(ctx, marketID)
 	if err != nil {
 		return err
@@ -34,6 +36,17 @@ func (uc *CancelMarketUseCase) Execute(ctx context.Context, marketID uuid.UUID, 
 	}
 	if market.Status != string(entity.MarketStatusOpen) && market.Status != string(entity.MarketStatusSuspended) {
 		return apperror.ErrMarketNotActive
+	}
+
+	league, err := uc.leagueRepo.GetLeagueByID(ctx, market.LeagueID)
+	if err != nil {
+		return err
+	}
+	if league.OwnerID != requesterID {
+		participant, err := uc.leagueRepo.GetParticipant(ctx, market.LeagueID, requesterID)
+		if err != nil || !participant.IsAdmin {
+			return apperror.ErrUnauthorized
+		}
 	}
 
 	err = uc.betRepo.CancelMarketAtomic(ctx, marketID, reason)

@@ -53,6 +53,7 @@ func GetUserLeaguesOutputToResponse(out *output.GetUserLeaguesOutput) response.G
 			Role:             string(l.Role),
 			ParticipantCount: l.ParticipantCount,
 			Balance:          l.Balance,
+			Status:           l.Status,
 		})
 	}
 	return response.GetUserLeaguesResponse{

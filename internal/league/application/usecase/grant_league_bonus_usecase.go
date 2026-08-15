@@ -29,7 +29,10 @@ func (uc *GrantLeagueBonusUseCase) Execute(ctx context.Context, userID, leagueID
 		return apperror.ErrLeagueNotFound
 	}
 	if league.OwnerID != userID {
-		return errors.New("only the league owner can grant bonuses")
+		participant, err := uc.leagueRepo.GetParticipant(ctx, leagueID, userID)
+		if err != nil || !participant.IsAdmin {
+			return errors.New("only the league admin can grant bonuses")
+		}
 	}
 
 	participants, err := uc.leagueRepo.GetParticipantsByLeagueID(ctx, leagueID)

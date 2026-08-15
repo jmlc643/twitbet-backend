@@ -60,7 +60,10 @@ func (u *UpdateMarketOptionStatusUseCase) Execute(ctx context.Context, marketID 
 		return err
 	}
 	if league.OwnerID != ownerID {
-		return apperror.ErrUnauthorized
+		participant, err := u.leagueRepo.GetParticipant(ctx, market.LeagueID, ownerID)
+		if err != nil || !participant.IsAdmin {
+			return apperror.ErrUnauthorized
+		}
 	}
 
 	if err := u.matchRepo.UpdateMarketOptionStatus(ctx, marketID, optionID, newStatus); err != nil {

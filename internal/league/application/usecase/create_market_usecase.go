@@ -40,7 +40,10 @@ func (uc *CreateMarketUseCase) Execute(ctx context.Context, OwnerID, leagueID uu
 		return nil, err
 	}
 	if league.OwnerID != OwnerID {
-		return nil, apperror.ErrUnauthorized
+		participant, err := uc.leagueRepo.GetParticipant(ctx, leagueID, OwnerID)
+		if err != nil || !participant.IsAdmin {
+			return nil, apperror.ErrUnauthorized
+		}
 	}
 
 	if matchID != nil {

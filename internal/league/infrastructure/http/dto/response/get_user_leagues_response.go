@@ -7,6 +7,7 @@ type LeagueSummaryResponse struct {
 	Role             string  `json:"role"`
 	ParticipantCount int     `json:"participant_count"`
 	Balance          float64 `json:"balance"`
+	Status           string  `json:"status"`
 }
 
 type GetUserLeaguesResponse struct {

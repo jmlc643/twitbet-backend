@@ -109,6 +109,18 @@ func (h *MarketLiveHandler) UpdateOdds(c *gin.Context) {
 }
 
 func (h *MarketLiveHandler) ResolveMarket(c *gin.Context) {
+	OwnerIDStr, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "no autorizado"})
+		return
+	}
+
+	OwnerID, err := uuid.Parse(OwnerIDStr.(string))
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "ID de usuario inválido"})
+		return
+	}
+
 	marketIDStr := c.Param("id")
 	marketID, err := uuid.Parse(marketIDStr)
 	if err != nil {
@@ -136,7 +148,7 @@ func (h *MarketLiveHandler) ResolveMarket(c *gin.Context) {
 		return
 	}
 
-	if err := h.resolveMarketUseCase.Execute(c.Request.Context(), marketID, winningOptionIDs); err != nil {
+	if err := h.resolveMarketUseCase.Execute(c.Request.Context(), marketID, OwnerID, winningOptionIDs); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -145,6 +157,18 @@ func (h *MarketLiveHandler) ResolveMarket(c *gin.Context) {
 }
 
 func (h *MarketLiveHandler) CancelMarket(c *gin.Context) {
+	OwnerIDStr, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "no autorizado"})
+		return
+	}
+
+	OwnerID, err := uuid.Parse(OwnerIDStr.(string))
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "ID de usuario inválido"})
+		return
+	}
+
 	marketIDStr := c.Param("id")
 	marketID, err := uuid.Parse(marketIDStr)
 	if err != nil {
@@ -158,7 +182,7 @@ func (h *MarketLiveHandler) CancelMarket(c *gin.Context) {
 		return
 	}
 
-	if err := h.cancelMarketUseCase.Execute(c.Request.Context(), marketID, req.CancellationReason); err != nil {
+	if err := h.cancelMarketUseCase.Execute(c.Request.Context(), marketID, OwnerID, req.CancellationReason); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
