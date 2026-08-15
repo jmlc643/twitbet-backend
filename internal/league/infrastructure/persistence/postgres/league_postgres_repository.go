@@ -83,6 +83,7 @@ func (r *LeagueRepository) GetUserLeagues(ctx context.Context, userID uuid.UUID)
 		Balance          float64
 		ParticipantCount int
 		IsAdmin          bool
+		Status           string
 	}
 
 	query := `
@@ -91,6 +92,7 @@ func (r *LeagueRepository) GetUserLeagues(ctx context.Context, userID uuid.UUID)
 			l.slug,
 			l.name, 
 			l.owner_id, 
+			l.status,
 			p.balance,
 			p.is_admin,
 			(SELECT COUNT(*) FROM league_participants p2 WHERE p2.league_id = l.id) as participant_count
@@ -123,6 +125,7 @@ func (r *LeagueRepository) GetUserLeagues(ctx context.Context, userID uuid.UUID)
 			Role:             role,
 			ParticipantCount: res.ParticipantCount,
 			Balance:          res.Balance,
+			Status:           res.Status,
 		})
 	}
 

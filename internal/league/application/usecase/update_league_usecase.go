@@ -27,7 +27,10 @@ func (uc *UpdateLeagueUseCase) Execute(ctx context.Context, in input.UpdateLeagu
 	}
 
 	if league.OwnerID != in.OwnerID {
-		return errors.New("solo el administrador puede modificar la liga")
+		participant, err := uc.repo.GetParticipant(ctx, in.LeagueID, in.OwnerID)
+		if err != nil || !participant.IsAdmin {
+			return errors.New("solo el administrador puede modificar la liga")
+		}
 	}
 
 	if in.Name != "" {

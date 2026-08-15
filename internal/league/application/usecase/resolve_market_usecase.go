@@ -26,7 +26,7 @@ func NewResolveMarketUseCase(betRepo repository.BetRepository, matchRepo reposit
 	}
 }
 
-func (uc *ResolveMarketUseCase) Execute(ctx context.Context, marketID uuid.UUID, winningOptionIDs []uuid.UUID) error {
+func (uc *ResolveMarketUseCase) Execute(ctx context.Context, marketID uuid.UUID, requesterID uuid.UUID, winningOptionIDs []uuid.UUID) error {
 	if len(winningOptionIDs) == 0 {
 		return apperror.ErrInvalidMarketOptions
 	}
@@ -40,6 +40,17 @@ func (uc *ResolveMarketUseCase) Execute(ctx context.Context, marketID uuid.UUID,
 	}
 	if entity.NotResolvableMarketStatus(market) {
 		return apperror.ErrMarketNotActive
+	}
+
+	league, err := uc.leagueRepo.GetLeagueByID(ctx, market.LeagueID)
+	if err != nil {
+		return err
+	}
+	if league.OwnerID != requesterID {
+		participant, err := uc.leagueRepo.GetParticipant(ctx, market.LeagueID, requesterID)
+		if err != nil || !participant.IsAdmin {
+			return apperror.ErrUnauthorized
+		}
 	}
 
 	winningSet := make(map[string]bool, len(winningOptionIDs))

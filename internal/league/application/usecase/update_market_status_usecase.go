@@ -45,7 +45,10 @@ func (u *UpdateMarketStatusUseCase) Execute(ctx context.Context, marketID uuid.U
 	}
 
 	if league.OwnerID != OwnerID {
-		return errors.New("no autorizado")
+		participant, err := u.leagueRepo.GetParticipant(ctx, market.LeagueID, OwnerID)
+		if err != nil || !participant.IsAdmin {
+			return errors.New("no autorizado")
+		}
 	}
 
 	market.Status = newStatus

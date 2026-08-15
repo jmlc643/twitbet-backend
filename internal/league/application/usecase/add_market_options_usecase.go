@@ -50,7 +50,10 @@ func (u *AddMarketOptionsUseCase) Execute(ctx context.Context, marketID uuid.UUI
 		return err
 	}
 	if league.OwnerID != ownerID {
-		return apperror.ErrUnauthorized
+		participant, err := u.leagueRepo.GetParticipant(ctx, market.LeagueID, ownerID)
+		if err != nil || !participant.IsAdmin {
+			return apperror.ErrUnauthorized
+		}
 	}
 
 	newOptions := make([]entity.MarketOption, 0, len(options))
