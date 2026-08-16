@@ -12,14 +12,16 @@ import (
 
 type ResolveMarketUseCase struct {
 	betRepo         repository.BetRepository
+	combinedBetRepo repository.CombinedBetRepository
 	matchRepo       repository.MatchRepository
 	leagueRepo      repository.LeagueRepository
 	marketPublisher port.MarketEventPublisher
 }
 
-func NewResolveMarketUseCase(betRepo repository.BetRepository, matchRepo repository.MatchRepository, leagueRepo repository.LeagueRepository, marketPublisher port.MarketEventPublisher) *ResolveMarketUseCase {
+func NewResolveMarketUseCase(betRepo repository.BetRepository, combinedBetRepo repository.CombinedBetRepository, matchRepo repository.MatchRepository, leagueRepo repository.LeagueRepository, marketPublisher port.MarketEventPublisher) *ResolveMarketUseCase {
 	return &ResolveMarketUseCase{
 		betRepo:         betRepo,
+		combinedBetRepo: combinedBetRepo,
 		matchRepo:       matchRepo,
 		leagueRepo:      leagueRepo,
 		marketPublisher: marketPublisher,
@@ -69,6 +71,11 @@ func (uc *ResolveMarketUseCase) Execute(ctx context.Context, marketID uuid.UUID,
 	}
 
 	err = uc.betRepo.ResolveMarketAtomic(ctx, marketID, winningOptionIDs)
+	if err != nil {
+		return err
+	}
+
+	err = uc.combinedBetRepo.ResolveCombinedBetsForMarketAtomic(ctx, marketID, winningOptionIDs)
 	if err != nil {
 		return err
 	}

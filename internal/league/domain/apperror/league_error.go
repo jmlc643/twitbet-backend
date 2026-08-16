@@ -21,4 +21,5 @@ var (
 	ErrInvalidMarketType     = errors.New("tipo de mercado inválido")
 	ErrMatchNotFound         = errors.New("partido no encontrado")
 	ErrUnauthorized          = errors.New("usuario no autorizado para realizar esta acción")
+	ErrBetNotFound           = errors.New("apuesta no encontrada")
 )
