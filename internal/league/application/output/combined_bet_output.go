@@ -10,6 +10,8 @@ type LegOutput struct {
 	ID              uuid.UUID
 	MarketID        uuid.UUID
 	MatchID         *uuid.UUID
+	MatchTitle      string
+	MarketName      string
 	SelectionName   string
 	OddsAtPlacement float64
 	Status          string

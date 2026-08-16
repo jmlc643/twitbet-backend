@@ -10,6 +10,8 @@ type LegResponse struct {
 	ID              uuid.UUID  `json:"id"`
 	MarketID        uuid.UUID  `json:"market_id"`
 	MatchID         *uuid.UUID `json:"match_id"`
+	MatchTitle      string     `json:"match_title"`
+	MarketName      string     `json:"market_name"`
 	SelectionName   string     `json:"selection_name"`
 	OddsAtPlacement float64    `json:"odds_at_placement"`
 	Status          string     `json:"status"`
@@ -30,4 +32,9 @@ type CombinedBetResponse struct {
 	CreatedAt        time.Time     `json:"created_at"`
 	SettledAt        *time.Time    `json:"settled_at,omitempty"`
 	Legs             []LegResponse `json:"legs"`
+}
+
+type PaginatedCombinedBetResponse struct {
+	Data []CombinedBetResponse `json:"data"`
+	Meta PaginationMeta      `json:"meta"`
 }

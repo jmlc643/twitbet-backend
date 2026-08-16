@@ -160,6 +160,24 @@ func (r *matchRepository) GetMarketsByLeagueID(ctx context.Context, leagueID uui
 	return mapDBMarketsToEntity(dbMarkets), nil
 }
 
+func (r *matchRepository) GetMarketsByIDs(ctx context.Context, marketIDs []uuid.UUID) ([]entity.Market, error) {
+	if len(marketIDs) == 0 {
+		return []entity.Market{}, nil
+	}
+
+	var strIDs []string
+	for _, id := range marketIDs {
+		strIDs = append(strIDs, id.String())
+	}
+
+	var dbMarkets []model.MarketModel
+	if err := r.db.WithContext(ctx).Preload("Options").Where("id IN ?", strIDs).
+		Find(&dbMarkets).Error; err != nil {
+		return nil, err
+	}
+	return mapDBMarketsToEntity(dbMarkets), nil
+}
+
 func (r *matchRepository) GetMarketsByMatchID(ctx context.Context, matchID uuid.UUID) ([]entity.Market, error) {
 	var dbMarkets []model.MarketModel
 	if err := r.db.WithContext(ctx).Preload("Options").Where("match_id = ?", matchID.String()).

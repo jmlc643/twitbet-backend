@@ -57,6 +57,10 @@ func NewCombinedBet(participantID, leagueID uuid.UUID, stake float64, useBonus b
 }
 
 func (cb *CombinedBet) Resolve(legResults map[uuid.UUID]valueobject.LegStatus) {
+	if cb.Status == valueobject.CombinedStatusCashout {
+		return
+	}
+
 	hasLoss := false
 	allSettled := true
 	hasVoid := false
@@ -111,31 +115,42 @@ func (cb *CombinedBet) RecalculateOddsAfterVoid() {
 
 func (cb *CombinedBet) CalculateCashoutValue(currentMarketOdds map[uuid.UUID]float64) float64 {
 	houseMargin := 0.90
-
-	multiplier := 1.0
+	potentialWin := cb.Stake
+	currentPendingOddsProduct := 1.0
 
 	for _, leg := range cb.Legs {
-		switch leg.Status {
-		case valueobject.LegStatusWon:
-			multiplier *= leg.OddsAtPlacement
+		if leg.Status == valueobject.LegStatusLost {
+			return 0.0
+		}
+		if leg.Status == valueobject.LegStatusVoided {
+			continue
+		}
 
-		case valueobject.LegStatusPending:
+		potentialWin *= leg.OddsAtPlacement
+
+		if leg.Status == valueobject.LegStatusPending {
 			currentOdds, ok := currentMarketOdds[leg.MarketID]
 			if !ok {
 				return 0.0
 			}
-			adjustedOdds := currentOdds * houseMargin
-			multiplier *= adjustedOdds
-
-		case valueobject.LegStatusLost:
-			return 0.0
-
-		case valueobject.LegStatusVoided:
-			continue
+			currentPendingOddsProduct *= currentOdds
 		}
 	}
 
-	cashoutValue := cb.Stake * multiplier
+	if currentPendingOddsProduct <= 0.0 {
+		return 0.0
+	}
+
+	cashoutValue := (potentialWin / currentPendingOddsProduct) * houseMargin
+
+	if cashoutValue > potentialWin {
+		cashoutValue = potentialWin
+	}
+
+	maxPayout := 500000.0
+	if cashoutValue > maxPayout {
+		cashoutValue = maxPayout
+	}
 
 	return cashoutValue
 }

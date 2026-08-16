@@ -75,11 +75,6 @@ func (uc *CashoutCombinedBetUseCase) Execute(ctx context.Context, userID, betID 
 	if err != nil {
 		return 0, err
 	}
-	
-	err = uc.combinedBetRepo.UpdateStatus(ctx, bet.ID, string(valueobject.CombinedStatusCashout))
-	if err != nil {
-		return 0, err
-	}
 
 	participant.Balance += cashoutValue
 	_ = uc.leagueRepo.UpdateParticipant(ctx, participant)

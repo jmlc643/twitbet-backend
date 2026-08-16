@@ -2,6 +2,8 @@ package handler
 
 import (
 	"net/http"
+	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -103,7 +105,34 @@ func (h *CombinedBetHandler) GetUserCombinedBets(c *gin.Context) {
 		userID = v
 	}
 
-	out, err := h.getUserCombinedBetsUC.Execute(c.Request.Context(), userID, leagueID)
+	status := c.Query("status")
+	var statusPtr *string
+	if status != "" {
+		statusPtr = &status
+	}
+
+	var startDatePtr, endDatePtr *time.Time
+	if startDateStr := c.Query("start_date"); startDateStr != "" {
+		if t, err := time.Parse(time.RFC3339, startDateStr); err == nil {
+			startDatePtr = &t
+		}
+	}
+	if endDateStr := c.Query("end_date"); endDateStr != "" {
+		if t, err := time.Parse(time.RFC3339, endDateStr); err == nil {
+			endDatePtr = &t
+		}
+	}
+
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	if page < 1 {
+		page = 1
+	}
+	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
+	if limit < 1 {
+		limit = 10
+	}
+
+	out, total, err := h.getUserCombinedBetsUC.Execute(c.Request.Context(), userID, leagueID, statusPtr, startDatePtr, endDatePtr, page, limit)
 	if err != nil {
 		h.handleDomainError(c, err)
 		return
@@ -114,7 +143,14 @@ func (h *CombinedBetHandler) GetUserCombinedBets(c *gin.Context) {
 		res[i] = mapper.ToCombinedBetResponse(o)
 	}
 
-	c.JSON(http.StatusOK, res)
+	c.JSON(http.StatusOK, response.PaginatedCombinedBetResponse{
+		Data: res,
+		Meta: response.PaginationMeta{
+			Total: total,
+			Page:  page,
+			Limit: limit,
+		},
+	})
 }
 
 func (h *CombinedBetHandler) GetCombinedBetDetails(c *gin.Context) {

@@ -7,4 +7,5 @@ const (
 	LegStatusWon     LegStatus = "WON"
 	LegStatusLost    LegStatus = "LOST"
 	LegStatusVoided  LegStatus = "VOIDED"
+	LegStatusCashout LegStatus = "CASHOUT"
 )

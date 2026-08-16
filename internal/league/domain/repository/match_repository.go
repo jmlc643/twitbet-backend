@@ -15,6 +15,7 @@ type MatchRepository interface {
 	GetMatchesByLeagueID(ctx context.Context, leagueID uuid.UUID, limit, offset int, status string) ([]entity.Match, int64, error)
 	GetMarketsByLeagueID(ctx context.Context, leagueID uuid.UUID) ([]entity.Market, error)
 	GetMarketsByMatchID(ctx context.Context, matchID uuid.UUID) ([]entity.Market, error)
+	GetMarketsByIDs(ctx context.Context, marketIDs []uuid.UUID) ([]entity.Market, error)
 	GetMarketByID(ctx context.Context, id uuid.UUID) (*entity.Market, error)
 	UpdateMarket(ctx context.Context, market *entity.Market) error
 	AddMarketOptions(ctx context.Context, marketID uuid.UUID, options []entity.MarketOption) error

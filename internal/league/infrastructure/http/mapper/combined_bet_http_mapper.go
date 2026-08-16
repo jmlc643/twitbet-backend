@@ -32,6 +32,8 @@ func ToCombinedBetResponse(out output.CombinedBetOutput) response.CombinedBetRes
 			ID:              l.ID,
 			MarketID:        l.MarketID,
 			MatchID:         l.MatchID,
+			MatchTitle:      l.MatchTitle,
+			MarketName:      l.MarketName,
 			SelectionName:   l.SelectionName,
 			OddsAtPlacement: l.OddsAtPlacement,
 			Status:          l.Status,

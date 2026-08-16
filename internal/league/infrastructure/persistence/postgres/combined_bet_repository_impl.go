@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jmlc643/twitbet-backend/internal/league/domain/apperror"
@@ -38,17 +39,38 @@ func (r *combinedBetRepository) GetByID(ctx context.Context, id uuid.UUID) (*ent
 	return mapper.ToCombinedBetEntity(&dbModel), nil
 }
 
-func (r *combinedBetRepository) GetByParticipantID(ctx context.Context, participantID uuid.UUID) ([]entity.CombinedBet, error) {
+func (r *combinedBetRepository) GetByParticipantID(ctx context.Context, participantID uuid.UUID, status *string, startDate, endDate *time.Time, limit, offset int) ([]entity.CombinedBet, int64, error) {
 	var dbModels []model.CombinedBetModel
-	if err := r.db.WithContext(ctx).Where("participant_id = ?", participantID).Preload("Legs").Find(&dbModels).Error; err != nil {
-		return nil, err
+	query := r.db.WithContext(ctx).Model(&model.CombinedBetModel{}).Where("participant_id = ?", participantID)
+
+	if status != nil && *status != "" {
+		query = query.Where("status = ?", *status)
+	}
+	if startDate != nil {
+		query = query.Where("created_at >= ?", *startDate)
+	}
+	if endDate != nil {
+		query = query.Where("created_at <= ?", *endDate)
+	}
+
+	var total int64
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	if limit > 0 {
+		query = query.Limit(limit).Offset(offset)
+	}
+
+	if err := query.Order("created_at DESC").Preload("Legs").Find(&dbModels).Error; err != nil {
+		return nil, 0, err
 	}
 
 	entities := make([]entity.CombinedBet, len(dbModels))
 	for i, dbModel := range dbModels {
 		entities[i] = *mapper.ToCombinedBetEntity(&dbModel)
 	}
-	return entities, nil
+	return entities, total, nil
 }
 
 func (r *combinedBetRepository) GetByLeagueID(ctx context.Context, leagueID uuid.UUID) ([]entity.CombinedBet, error) {
@@ -69,9 +91,19 @@ func (r *combinedBetRepository) UpdateStatus(ctx context.Context, id uuid.UUID, 
 }
 
 func (r *combinedBetRepository) UpdateCashout(ctx context.Context, id uuid.UUID, cashoutValue float64) error {
-	return r.db.WithContext(ctx).Model(&model.CombinedBetModel{}).Where("id = ?", id).Updates(map[string]interface{}{
-		"cashout_value": cashoutValue,
-	}).Error
+	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if err := tx.Model(&model.CombinedBetModel{}).Where("id = ?", id).Updates(map[string]interface{}{
+			"cashout_value": cashoutValue,
+			"status":        string(valueobject.CombinedStatusCashout),
+		}).Error; err != nil {
+			return err
+		}
+
+		if err := tx.Model(&model.CombinedBetLegModel{}).Where("combined_bet_id = ? AND status = ?", id, string(valueobject.LegStatusPending)).Update("status", string(valueobject.LegStatusCashout)).Error; err != nil {
+			return err
+		}
+		return nil
+	})
 }
 
 func (r *combinedBetRepository) PlaceCombinedBetAtomic(ctx context.Context, bet *entity.CombinedBet, txEntity *entity.Transaction) error {
