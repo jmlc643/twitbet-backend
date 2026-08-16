@@ -6,7 +6,6 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/jmlc643/twitbet-backend/internal/league/application/usecase"
-	"github.com/jmlc643/twitbet-backend/internal/league/application/combined_bet"
 	"github.com/jmlc643/twitbet-backend/internal/league/infrastructure/http/handler"
 	"github.com/jmlc643/twitbet-backend/internal/league/infrastructure/persistence/postgres"
 	leagueRedis "github.com/jmlc643/twitbet-backend/internal/league/infrastructure/redis"
@@ -90,10 +89,10 @@ func RegisterRoutes(router *gin.Engine, db *gorm.DB, rdb *redis.Client, jwtSecre
 	betHandler := handler.NewBetHandler(placeBetUC, getUserBetsUC, cashoutBetUC)
 
 	// Casos de uso de Apuestas Combinadas
-	placeCombinedBetUC := combined_bet.NewPlaceCombinedBetUseCase(combinedBetRepo, leagueRepo, matchRepo, marketPublisher)
-	getUserCombinedBetsUC := combined_bet.NewGetUserCombinedBetsUseCase(combinedBetRepo, leagueRepo, matchRepo)
-	getCombinedBetDetailsUC := combined_bet.NewGetCombinedBetDetailsUseCase(combinedBetRepo, leagueRepo, matchRepo)
-	cashoutCombinedBetUC := combined_bet.NewCashoutCombinedBetUseCase(combinedBetRepo, leagueRepo, matchRepo)
+	placeCombinedBetUC := usecase.NewPlaceCombinedBetUseCase(combinedBetRepo, leagueRepo, matchRepo, marketPublisher)
+	getUserCombinedBetsUC := usecase.NewGetUserCombinedBetsUseCase(combinedBetRepo, leagueRepo, matchRepo)
+	getCombinedBetDetailsUC := usecase.NewGetCombinedBetDetailsUseCase(combinedBetRepo, leagueRepo, matchRepo)
+	cashoutCombinedBetUC := usecase.NewCashoutCombinedBetUseCase(combinedBetRepo, leagueRepo, matchRepo)
 	
 	combinedBetHandler := handler.NewCombinedBetHandler(placeCombinedBetUC, getUserCombinedBetsUC, getCombinedBetDetailsUC, cashoutCombinedBetUC)
 

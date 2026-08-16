@@ -22,15 +22,15 @@ func (uc *RemoveAdminUseCase) Execute(ctx context.Context, in input.RemoveAdminI
 		return err
 	}
 	if league == nil {
-		return errors.New("liga no encontrada")
+		return errors.New("Liga no encontrada")
 	}
 
 	if league.OwnerID != in.OwnerID {
-		return errors.New("solo el propietario puede remover administradores")
+		return errors.New("Solo el propietario puede remover administradores")
 	}
 
 	if league.OwnerID == in.ParticipantID {
-		return errors.New("no se puede remover el rol de admin al propietario")
+		return errors.New("No se puede remover el rol de admin al propietario")
 	}
 
 	participant, err := uc.repo.GetParticipant(ctx, in.LeagueID, in.ParticipantID)
@@ -38,7 +38,7 @@ func (uc *RemoveAdminUseCase) Execute(ctx context.Context, in input.RemoveAdminI
 		return err
 	}
 	if participant == nil {
-		return errors.New("participante no encontrado en la liga")
+		return errors.New("Participante no encontrado en la liga")
 	}
 
 	participant.IsAdmin = false

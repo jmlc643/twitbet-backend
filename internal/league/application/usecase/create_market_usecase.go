@@ -52,7 +52,7 @@ func (uc *CreateMarketUseCase) Execute(ctx context.Context, OwnerID, leagueID uu
 			return nil, err
 		}
 		if match.LeagueID != leagueID {
-			return nil, errors.New("el partido no pertenece a esta liga")
+			return nil, errors.New("El partido no pertenece a esta liga")
 		}
 	}
 

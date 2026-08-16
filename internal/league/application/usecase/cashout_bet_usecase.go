@@ -27,15 +27,15 @@ func (uc *CashoutBetUseCase) Execute(ctx context.Context, userID, betID uuid.UUI
 		return nil, err
 	}
 	if bet == nil {
-		return nil, errors.New("bet not found")
+		return nil, errors.New("Apuesta no encontrada")
 	}
 
 	if bet.Status != entity.BetStatusAccepted && bet.Status != entity.BetStatusPending {
-		return nil, errors.New("bet is not active")
+		return nil, errors.New("La apuesta no está activa")
 	}
 
 	if bet.IsBonusBet {
-		return nil, errors.New("cannot cashout a bonus bet")
+		return nil, errors.New("No se puede hacer cashout de una apuesta de bono")
 	}
 
 	participant, err := uc.leagueRepo.GetParticipantByID(ctx, bet.ParticipantID)
@@ -43,7 +43,7 @@ func (uc *CashoutBetUseCase) Execute(ctx context.Context, userID, betID uuid.UUI
 		return nil, err
 	}
 	if participant == nil || participant.UserID != userID {
-		return nil, errors.New("unauthorized to cashout this bet")
+		return nil, errors.New("No autorizado para hacer cashout de esta apuesta")
 	}
 
 	cashoutAmount := bet.Amount * 0.95

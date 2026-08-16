@@ -1,4 +1,4 @@
-package combined_bet
+package usecase
 
 import (
 	"context"

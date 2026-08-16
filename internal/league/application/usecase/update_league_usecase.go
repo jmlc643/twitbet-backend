@@ -23,13 +23,13 @@ func (uc *UpdateLeagueUseCase) Execute(ctx context.Context, in input.UpdateLeagu
 		return err
 	}
 	if league == nil {
-		return errors.New("liga no encontrada")
+		return errors.New("Liga no encontrada")
 	}
 
 	if league.OwnerID != in.OwnerID {
 		participant, err := uc.repo.GetParticipant(ctx, in.LeagueID, in.OwnerID)
 		if err != nil || !participant.IsAdmin {
-			return errors.New("solo el administrador puede modificar la liga")
+			return errors.New("Solo el administrador puede modificar la liga")
 		}
 	}
 

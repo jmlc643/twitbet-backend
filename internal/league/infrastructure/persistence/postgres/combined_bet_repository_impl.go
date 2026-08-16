@@ -115,17 +115,17 @@ func (r *combinedBetRepository) PlaceCombinedBetAtomic(ctx context.Context, bet 
 
 		if bet.UseBonus {
 			if bet.ParticipantBonusID == nil {
-				return errors.New("bonus id is missing for bonus bet")
+				return errors.New("Falta el id del bono para la apuesta de bono")
 			}
 			var bonus model.ParticipantBonusModel
 			if err := tx.Set("gorm:query_option", "FOR UPDATE").Where("id = ?", bet.ParticipantBonusID.String()).First(&bonus).Error; err != nil {
 				return err
 			}
 			if bonus.Status != string(entity.BonusStatusPending) {
-				return errors.New("bonus is not pending")
+				return errors.New("El bono no está pendiente")
 			}
 			if bonus.Amount != bet.Stake {
-				return errors.New("bet amount does not match bonus amount")
+				return errors.New("El monto de la apuesta no coincide con el monto del bono")
 			}
 			bonus.Status = string(entity.BonusStatusUsed)
 			if err := tx.Save(&bonus).Error; err != nil {

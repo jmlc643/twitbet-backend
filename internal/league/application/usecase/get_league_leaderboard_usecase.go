@@ -25,7 +25,7 @@ func (uc *GetLeagueLeaderboardUseCase) Execute(ctx context.Context, leagueID, us
 		return nil, err
 	}
 	if league == nil {
-		return nil, errors.New("liga no encontrada")
+		return nil, errors.New("Liga no encontrada")
 	}
 
 	hideBalances := league.HideStandings && league.Status != "FINALIZED"

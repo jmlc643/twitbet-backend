@@ -7,7 +7,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"github.com/jmlc643/twitbet-backend/internal/league/application/combined_bet"
+	"github.com/jmlc643/twitbet-backend/internal/league/application/usecase"
 	"github.com/jmlc643/twitbet-backend/internal/league/domain/apperror"
 	"github.com/jmlc643/twitbet-backend/internal/league/infrastructure/http/dto/request"
 	"github.com/jmlc643/twitbet-backend/internal/league/infrastructure/http/dto/response"
@@ -15,17 +15,17 @@ import (
 )
 
 type CombinedBetHandler struct {
-	placeCombinedBetUC   *combined_bet.PlaceCombinedBetUseCase
-	getUserCombinedBetsUC *combined_bet.GetUserCombinedBetsUseCase
-	getCombinedBetDetailsUC *combined_bet.GetCombinedBetDetailsUseCase
-	cashoutCombinedBetUC *combined_bet.CashoutCombinedBetUseCase
+	placeCombinedBetUC      *usecase.PlaceCombinedBetUseCase
+	getUserCombinedBetsUC   *usecase.GetUserCombinedBetsUseCase
+	getCombinedBetDetailsUC *usecase.GetCombinedBetDetailsUseCase
+	cashoutCombinedBetUC    *usecase.CashoutCombinedBetUseCase
 }
 
 func NewCombinedBetHandler(
-	placeCombinedBetUC *combined_bet.PlaceCombinedBetUseCase,
-	getUserCombinedBetsUC *combined_bet.GetUserCombinedBetsUseCase,
-	getCombinedBetDetailsUC *combined_bet.GetCombinedBetDetailsUseCase,
-	cashoutCombinedBetUC *combined_bet.CashoutCombinedBetUseCase,
+	placeCombinedBetUC *usecase.PlaceCombinedBetUseCase,
+	getUserCombinedBetsUC *usecase.GetUserCombinedBetsUseCase,
+	getCombinedBetDetailsUC *usecase.GetCombinedBetDetailsUseCase,
+	cashoutCombinedBetUC *usecase.CashoutCombinedBetUseCase,
 ) *CombinedBetHandler {
 	return &CombinedBetHandler{
 		placeCombinedBetUC:      placeCombinedBetUC,

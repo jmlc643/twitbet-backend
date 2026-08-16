@@ -23,7 +23,7 @@ func (uc *GetLeagueDetailsUseCase) Execute(ctx context.Context, in input.GetLeag
 		return output.GetLeagueDetailsOutput{}, err
 	}
 	if league == nil {
-		return output.GetLeagueDetailsOutput{}, errors.New("liga no encontrada")
+		return output.GetLeagueDetailsOutput{}, errors.New("Liga no encontrada")
 	}
 
 	participants, err := uc.repo.GetParticipantsByLeagueID(ctx, league.ID)
