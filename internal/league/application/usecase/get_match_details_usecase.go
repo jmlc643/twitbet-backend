@@ -24,7 +24,7 @@ func (uc *GetMatchDetailsUseCase) Execute(ctx context.Context, slug string) (out
 		return output.GetMatchDetailsOutput{}, err
 	}
 	if match == nil {
-		return output.GetMatchDetailsOutput{}, errors.New("partido no encontrado")
+		return output.GetMatchDetailsOutput{}, errors.New("Partido no encontrado")
 	}
 
 	markets, err := uc.matchRepo.GetMarketsByMatchID(ctx, match.ID)

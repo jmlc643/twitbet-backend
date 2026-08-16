@@ -31,7 +31,7 @@ func (uc *GrantLeagueBonusUseCase) Execute(ctx context.Context, userID, leagueID
 	if league.OwnerID != userID {
 		participant, err := uc.leagueRepo.GetParticipant(ctx, leagueID, userID)
 		if err != nil || !participant.IsAdmin {
-			return errors.New("only the league admin can grant bonuses")
+			return errors.New("Solo el administrador de la liga puede otorgar bonos")
 		}
 	}
 

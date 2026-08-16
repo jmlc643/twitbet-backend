@@ -22,11 +22,11 @@ func (uc *AssignAdminUseCase) Execute(ctx context.Context, in input.AssignAdminI
 		return err
 	}
 	if league == nil {
-		return errors.New("liga no encontrada")
+		return errors.New("Liga no encontrada")
 	}
 
 	if league.OwnerID != in.OwnerID {
-		return errors.New("solo el propietario puede asignar administradores")
+		return errors.New("Solo el propietario puede asignar administradores")
 	}
 
 	participant, err := uc.repo.GetParticipant(ctx, in.LeagueID, in.ParticipantID)
@@ -34,7 +34,7 @@ func (uc *AssignAdminUseCase) Execute(ctx context.Context, in input.AssignAdminI
 		return err
 	}
 	if participant == nil {
-		return errors.New("participante no encontrado en la liga")
+		return errors.New("Participante no encontrado en la liga")
 	}
 
 	participant.IsAdmin = true

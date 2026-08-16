@@ -30,7 +30,7 @@ func (uc *CreateMatchUseCase) Execute(ctx context.Context, OwnerID, leagueID uui
 	if league.OwnerID != OwnerID {
 		participant, err := uc.leagueRepo.GetParticipant(ctx, leagueID, OwnerID)
 		if err != nil || !participant.IsAdmin {
-			return nil, errors.New("el usuario no es administrador de la liga")
+			return nil, errors.New("El usuario no es administrador de la liga")
 		}
 	}
 

@@ -99,6 +99,7 @@ func (r *LeagueRepository) GetUserLeagues(ctx context.Context, userID uuid.UUID)
 		FROM leagues l
 		JOIN league_participants p ON l.id = p.league_id
 		WHERE p.user_id = ?
+		ORDER BY CASE WHEN l.status = 'ACTIVE' THEN 1 ELSE 2 END, l.name ASC
 	`
 
 	err := r.db.WithContext(ctx).Raw(query, userID.String()).Scan(&results).Error

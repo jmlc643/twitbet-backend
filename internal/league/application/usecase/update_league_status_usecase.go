@@ -22,22 +22,22 @@ func (uc *UpdateLeagueStatusUseCase) Execute(ctx context.Context, in input.Updat
 		return err
 	}
 	if league == nil {
-		return errors.New("liga no encontrada")
+		return errors.New("Liga no encontrada")
 	}
 
 	if league.OwnerID != in.OwnerID {
 		participant, err := uc.repo.GetParticipant(ctx, in.LeagueID, in.OwnerID)
 		if err != nil || !participant.IsAdmin {
-			return errors.New("solo el administrador puede modificar la liga")
+			return errors.New("Solo el administrador puede modificar la liga")
 		}
 	}
 
 	if league.Status == "FINALIZED" {
-		return errors.New("la liga ya se encuentra finalizada y es un estado definitivo")
+		return errors.New("La liga ya se encuentra finalizada y es un estado definitivo")
 	}
 
 	if in.Status != "ACTIVE" && in.Status != "FINALIZED" {
-		return errors.New("estado inválido")
+		return errors.New("Estado inválido")
 	}
 
 	league.Status = in.Status

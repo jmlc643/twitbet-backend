@@ -37,7 +37,7 @@ func (uc *RechargeBalanceUseCase) Execute(ctx context.Context, userID, leagueID 
 	}
 
 	if participant.RechargesConsumed >= league.MaxRecharges {
-		return 0, 0, errors.New("max recharges reached")
+		return 0, 0, errors.New("Se alcanzó el máximo de recargas")
 	}
 
 	rechargeAmount := league.InitialBalance * 0.5

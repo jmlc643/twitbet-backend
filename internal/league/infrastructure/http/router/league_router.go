@@ -45,9 +45,11 @@ func RegisterRoutes(router *gin.Engine, db *gorm.DB, rdb *redis.Client, jwtSecre
 	getMatchDetailsUC := usecase.NewGetMatchDetailsUseCase(matchRepo)
 	updateMatchStatusUC := usecase.NewUpdateMatchStatusUseCase(matchRepo, leagueRepo, marketPublisher)
 	
+	combinedBetRepo := postgres.NewCombinedBetRepository(db)
+
 	updateMarketStatusUC := usecase.NewUpdateMarketStatusUseCase(matchRepo, leagueRepo, marketPublisher)
 	updateMarketOddsUC := usecase.NewUpdateMarketOddsUseCase(matchRepo, leagueRepo, marketPublisher)
-	resolveMarketUC := usecase.NewResolveMarketUseCase(betRepo, matchRepo, leagueRepo, marketPublisher)
+	resolveMarketUC := usecase.NewResolveMarketUseCase(betRepo, combinedBetRepo, matchRepo, leagueRepo, marketPublisher)
 	cancelMarketUC := usecase.NewCancelMarketUseCase(betRepo, matchRepo, leagueRepo, marketPublisher)
 	updateMarketOptionStatusUC := usecase.NewUpdateMarketOptionStatusUseCase(matchRepo, leagueRepo, marketPublisher)
 	addMarketOptionsUC := usecase.NewAddMarketOptionsUseCase(matchRepo, leagueRepo, marketPublisher)
@@ -85,6 +87,14 @@ func RegisterRoutes(router *gin.Engine, db *gorm.DB, rdb *redis.Client, jwtSecre
 	getUserBetsUC := usecase.NewGetUserBetsUseCase(betRepo, leagueRepo)
 	cashoutBetUC := usecase.NewCashoutBetUseCase(betRepo, leagueRepo)
 	betHandler := handler.NewBetHandler(placeBetUC, getUserBetsUC, cashoutBetUC)
+
+	// Casos de uso de Apuestas Combinadas
+	placeCombinedBetUC := usecase.NewPlaceCombinedBetUseCase(combinedBetRepo, leagueRepo, matchRepo, marketPublisher)
+	getUserCombinedBetsUC := usecase.NewGetUserCombinedBetsUseCase(combinedBetRepo, leagueRepo, matchRepo)
+	getCombinedBetDetailsUC := usecase.NewGetCombinedBetDetailsUseCase(combinedBetRepo, leagueRepo, matchRepo)
+	cashoutCombinedBetUC := usecase.NewCashoutCombinedBetUseCase(combinedBetRepo, leagueRepo, matchRepo)
+	
+	combinedBetHandler := handler.NewCombinedBetHandler(placeCombinedBetUC, getUserCombinedBetsUC, getCombinedBetDetailsUC, cashoutCombinedBetUC)
 
 	tokenService := identityAdapter.NewJWTTokenService(jwtSecret)
 	authMiddleware := identityMiddleware.JWTMiddleware(tokenService)
@@ -145,6 +155,15 @@ func RegisterRoutes(router *gin.Engine, db *gorm.DB, rdb *redis.Client, jwtSecre
 		{
 			betRoutes.POST("", betHandler.PlaceBet)
 			betRoutes.POST("/:id/cashout", betHandler.Cashout)
+		}
+
+		combinedBetRoutes := api.Group("/combined-bets")
+		combinedBetRoutes.Use(authMiddleware)
+		{
+			combinedBetRoutes.POST("", combinedBetHandler.PlaceCombinedBet)
+			combinedBetRoutes.GET("", combinedBetHandler.GetUserCombinedBets)
+			combinedBetRoutes.GET("/:id", combinedBetHandler.GetCombinedBetDetails)
+			combinedBetRoutes.POST("/:id/cashout", combinedBetHandler.Cashout)
 		}
 	}
 }

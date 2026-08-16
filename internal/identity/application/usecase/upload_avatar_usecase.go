@@ -32,7 +32,7 @@ func (uc *UploadAvatarUseCase) Execute(ctx context.Context, userID string, file 
 	}
 
 	if uc.storageService == nil {
-		return "", errors.New("storage service not configured")
+		return "", errors.New("Servicio de almacenamiento no configurado")
 	}
 
 	newAvatarURL, err := uc.storageService.UploadImage(ctx, file, filename)
