@@ -69,11 +69,13 @@ type Market struct {
 	MatchID   *uuid.UUID
 	Name      string
 	Type      string
-	Status    string
+	Status             string
 	CancellationReason *string
-	Options   []MarketOption
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	SuspendReason      *string
+	Seq                int64
+	Options            []MarketOption
+	CreatedAt          time.Time
+	UpdatedAt          time.Time
 }
 
 type MarketOptionCreate struct {
@@ -114,6 +116,7 @@ func NewMarket(leagueID uuid.UUID, matchID *uuid.UUID, name string, marketType s
 		Name:      name,
 		Type:      marketType,
 		Status:    string(MarketStatusOpen),
+		Seq:       1,
 		Options:   marketOptions,
 		CreatedAt: now,
 		UpdatedAt: now,

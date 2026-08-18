@@ -3,8 +3,9 @@ package input
 import "github.com/google/uuid"
 
 type SelectionInput struct {
-	MarketID    uuid.UUID
-	SelectionID uuid.UUID
+	MarketID     uuid.UUID
+	SelectionID  uuid.UUID
+	AcceptedOdds float64
 }
 
 type PlaceCombinedBetInput struct {

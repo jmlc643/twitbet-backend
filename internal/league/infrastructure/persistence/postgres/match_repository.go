@@ -238,6 +238,69 @@ func (r *matchRepository) UpdateMarket(ctx context.Context, market *entity.Marke
 	})
 }
 
+func (r *matchRepository) UpdateMarketAndHistory(ctx context.Context, market *entity.Market, history []entity.MarketOddsHistory) error {
+	var matchID *string
+	if market.MatchID != nil {
+		idStr := market.MatchID.String()
+		matchID = &idStr
+	}
+
+	dbMarket := &model.MarketModel{
+		ID:        market.ID.String(),
+		LeagueID:  market.LeagueID.String(),
+		MatchID:   matchID,
+		Name:      market.Name,
+		Type:      market.Type,
+		Status:    market.Status,
+		CreatedAt: market.CreatedAt,
+		UpdatedAt: market.UpdatedAt,
+	}
+
+	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if err := tx.Save(dbMarket).Error; err != nil {
+			return err
+		}
+		for _, opt := range market.Options {
+			dbOpt := &model.MarketOptionModel{
+				ID:          opt.ID.String(),
+				MarketID:    market.ID.String(),
+				Name:        opt.Name,
+				InitialOdds: opt.InitialOdds,
+				CurrentOdds: opt.CurrentOdds,
+				Status:      optionStatusOrDefault(opt.Status),
+			}
+			if err := tx.Save(dbOpt).Error; err != nil {
+				return err
+			}
+		}
+
+		if len(history) > 0 {
+			dbHistories := make([]model.MarketOddsHistoryModel, 0, len(history))
+			for _, h := range history {
+				var changedBy *string
+				if h.ChangedBy != nil {
+					idStr := h.ChangedBy.String()
+					changedBy = &idStr
+				}
+				dbHistories = append(dbHistories, model.MarketOddsHistoryModel{
+					ID:             h.ID.String(),
+					MarketOptionID: h.MarketOptionID.String(),
+					OldOdds:        h.OldOdds,
+					NewOdds:        h.NewOdds,
+					ChangedBy:      changedBy,
+					Reason:         h.Reason,
+					CreatedAt:      h.CreatedAt,
+				})
+			}
+			if err := tx.Create(&dbHistories).Error; err != nil {
+				return err
+			}
+		}
+
+		return nil
+	})
+}
+
 func (r *matchRepository) AddMarketOptions(ctx context.Context, marketID uuid.UUID, options []entity.MarketOption) error {
 	if len(options) == 0 {
 		return nil
@@ -345,6 +408,33 @@ func (r *matchRepository) UpdateMatchStatusAtomic(ctx context.Context, matchID u
 	}
 
 	return tx.Commit().Error
+}
+
+func (r *matchRepository) SaveMarketOddsHistory(ctx context.Context, history []entity.MarketOddsHistory) error {
+	if len(history) == 0 {
+		return nil
+	}
+
+	dbHistories := make([]model.MarketOddsHistoryModel, 0, len(history))
+	for _, h := range history {
+		var changedBy *string
+		if h.ChangedBy != nil {
+			idStr := h.ChangedBy.String()
+			changedBy = &idStr
+		}
+
+		dbHistories = append(dbHistories, model.MarketOddsHistoryModel{
+			ID:             h.ID.String(),
+			MarketOptionID: h.MarketOptionID.String(),
+			OldOdds:        h.OldOdds,
+			NewOdds:        h.NewOdds,
+			ChangedBy:      changedBy,
+			Reason:         h.Reason,
+			CreatedAt:      h.CreatedAt,
+		})
+	}
+
+	return r.db.WithContext(ctx).Create(&dbHistories).Error
 }
 
 func mapDBMarketsToEntity(dbMarkets []model.MarketModel) []entity.Market {

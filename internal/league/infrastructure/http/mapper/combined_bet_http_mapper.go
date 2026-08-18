@@ -11,8 +11,9 @@ func ToPlaceCombinedBetInput(req request.PlaceCombinedBetRequest) input.PlaceCom
 	selections := make([]input.SelectionInput, len(req.Selections))
 	for i, s := range req.Selections {
 		selections[i] = input.SelectionInput{
-			MarketID:    s.MarketID,
-			SelectionID: s.SelectionID,
+			MarketID:     s.MarketID,
+			SelectionID:  s.SelectionID,
+			AcceptedOdds: s.AcceptedOdds,
 		}
 	}
 

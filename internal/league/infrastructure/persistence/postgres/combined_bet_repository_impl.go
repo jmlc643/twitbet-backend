@@ -141,6 +141,16 @@ func (r *combinedBetRepository) PlaceCombinedBetAtomic(ctx context.Context, bet 
 			}
 		}
 
+		for _, leg := range bet.Legs {
+			var marketOption model.MarketOptionModel
+			if err := tx.Set("gorm:query_option", "FOR UPDATE").Where("id = ?", leg.SelectionID.String()).First(&marketOption).Error; err != nil {
+				return err
+			}
+			if marketOption.CurrentOdds != leg.OddsAtPlacement {
+				return &apperror.OddsChangedError{CurrentOdds: marketOption.CurrentOdds} // We could return an array of current odds, but one is enough to trigger the 409
+			}
+		}
+
 		betModel := mapper.ToCombinedBetModel(bet)
 		if err := tx.Create(betModel).Error; err != nil {
 			return err

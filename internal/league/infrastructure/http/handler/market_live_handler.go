@@ -1,12 +1,14 @@
 package handler
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/jmlc643/twitbet-backend/internal/league/application/input"
 	"github.com/jmlc643/twitbet-backend/internal/league/application/usecase"
+	"github.com/jmlc643/twitbet-backend/internal/league/domain/apperror"
 	"github.com/jmlc643/twitbet-backend/internal/league/infrastructure/http/dto/request"
 )
 
@@ -100,12 +102,32 @@ func (h *MarketLiveHandler) UpdateOdds(c *gin.Context) {
 		parsedOdds[optID] = odds
 	}
 
-	if err := h.updateOddsUseCase.Execute(c.Request.Context(), marketID, OwnerID, parsedOdds); err != nil {
+	resultOdds, err := h.updateOddsUseCase.Execute(c.Request.Context(), marketID, OwnerID, parsedOdds)
+	if err != nil {
+		if errors.Is(err, apperror.ErrArbitrageMarket) || errors.Is(err, apperror.ErrOddsOutOfBounds) {
+			c.JSON(http.StatusUnprocessableEntity, gin.H{"error": err.Error()})
+			return
+		}
+		
+		var rebalanceErr *apperror.RebalanceError
+		if errors.As(err, &rebalanceErr) {
+			c.JSON(http.StatusUnprocessableEntity, gin.H{
+				"error":            "ERR_IMPOSSIBLE_REBALANCE",
+				"touched_mass":     rebalanceErr.TouchedMass,
+				"max_touched_mass": rebalanceErr.MaxTouchedMass,
+				"hint":             rebalanceErr.Hint,
+			})
+			return
+		}
+
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Cuotas actualizadas exitosamente"})
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Cuotas actualizadas exitosamente",
+		"odds":    resultOdds,
+	})
 }
 
 func (h *MarketLiveHandler) ResolveMarket(c *gin.Context) {

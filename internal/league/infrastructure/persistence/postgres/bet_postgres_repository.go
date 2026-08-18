@@ -64,6 +64,14 @@ func (r *BetRepository) PlaceBetAtomic(ctx context.Context, bet *entity.Bet, tra
 		}
 	}
 
+	var marketOption model.MarketOptionModel
+	if err := tx.Set("gorm:query_option", "FOR UPDATE").Where("id = ?", bet.MarketOptionID.String()).First(&marketOption).Error; err != nil {
+		return err
+	}
+	if marketOption.CurrentOdds != bet.Odds {
+		return &apperror.OddsChangedError{CurrentOdds: marketOption.CurrentOdds}
+	}
+
 	transactionModel := mapper.EntityToTransactionModel(transaction)
 	if err := tx.Create(transactionModel).Error; err != nil {
 		return err

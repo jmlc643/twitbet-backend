@@ -22,4 +22,24 @@ var (
 	ErrMatchNotFound         = errors.New("Partido no encontrado")
 	ErrUnauthorized          = errors.New("Usuario no autorizado para realizar esta acción")
 	ErrBetNotFound           = errors.New("Apuesta no encontrada")
+	ErrArbitrageMarket   = errors.New("Mercado de arbitraje detectado (overround < 1)")
+	ErrOddsOutOfBounds   = errors.New("El rebalanceo deja cuotas fuera del rango permitido")
 )
+
+type RebalanceError struct {
+	TouchedMass    float64
+	MaxTouchedMass float64
+	Hint           string
+}
+
+func (e *RebalanceError) Error() string {
+	return "Rebalanceo imposible"
+}
+
+type OddsChangedError struct {
+	CurrentOdds float64
+}
+
+func (e *OddsChangedError) Error() string {
+	return "ODDS_CHANGED"
+}
