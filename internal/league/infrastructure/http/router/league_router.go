@@ -85,7 +85,7 @@ func RegisterRoutes(router *gin.Engine, db *gorm.DB, rdb *redis.Client, jwtSecre
 	placeBetUC := usecase.NewPlaceBetUseCase(betRepo, leagueRepo, matchRepo, marketPublisher)
 
 	getUserBetsUC := usecase.NewGetUserBetsUseCase(betRepo, leagueRepo)
-	cashoutBetUC := usecase.NewCashoutBetUseCase(betRepo, leagueRepo)
+	cashoutBetUC := usecase.NewCashoutBetUseCase(betRepo, leagueRepo, matchRepo)
 	betHandler := handler.NewBetHandler(placeBetUC, getUserBetsUC, cashoutBetUC)
 
 	// Casos de uso de Apuestas Combinadas

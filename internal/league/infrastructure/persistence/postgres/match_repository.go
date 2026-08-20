@@ -484,6 +484,14 @@ func optionStatusOrDefault(status string) string {
 	return status
 }
 
+func (r *matchRepository) GetMarketOptionCurrentOdds(ctx context.Context, optionID uuid.UUID) (float64, error) {
+	var opt model.MarketOptionModel
+	if err := r.db.WithContext(ctx).Where("id = ?", optionID.String()).First(&opt).Error; err != nil {
+		return 0, err
+	}
+	return opt.CurrentOdds, nil
+}
+
 func marketTypeOrderSQL() string {
 	return "CASE markets.type " +
 		"WHEN 'RESULT' THEN 1 " +

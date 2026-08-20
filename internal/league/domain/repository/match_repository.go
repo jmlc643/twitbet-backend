@@ -21,6 +21,7 @@ type MatchRepository interface {
 	UpdateMarketAndHistory(ctx context.Context, market *entity.Market, history []entity.MarketOddsHistory) error
 	AddMarketOptions(ctx context.Context, marketID uuid.UUID, options []entity.MarketOption) error
 	UpdateMarketOptionStatus(ctx context.Context, marketID uuid.UUID, optionID uuid.UUID, newStatus string) error
+	GetMarketOptionCurrentOdds(ctx context.Context, optionID uuid.UUID) (float64, error)
 	UpdateMatchStatusAtomic(ctx context.Context, matchID uuid.UUID, newStatus string) error
 	SaveMarketOddsHistory(ctx context.Context, history []entity.MarketOddsHistory) error
 }

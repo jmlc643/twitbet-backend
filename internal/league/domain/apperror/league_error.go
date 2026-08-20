@@ -38,6 +38,7 @@ func (e *RebalanceError) Error() string {
 
 type OddsChangedError struct {
 	CurrentOdds float64
+	UpdatedOdds map[string]float64
 }
 
 func (e *OddsChangedError) Error() string {

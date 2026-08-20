@@ -234,6 +234,7 @@ func (h *CombinedBetHandler) handleDomainError(c *gin.Context, err error) {
 		c.JSON(http.StatusConflict, gin.H{
 			"error":        oddsChangedErr.Error(),
 			"current_odds": oddsChangedErr.CurrentOdds,
+			"updated_odds": oddsChangedErr.UpdatedOdds,
 		})
 		return
 	}

@@ -73,8 +73,23 @@ func (u *UpdateMarketOddsUseCase) Execute(ctx context.Context, marketID uuid.UUI
 
 	resultOdds := make(map[uuid.UUID]float64)
 	
+	actuallyChangedOdds := make(map[uuid.UUID]float64)
+	for _, opt := range market.Options {
+		if newOdd, ok := optionsOdds[opt.ID]; ok && newOdd != opt.CurrentOdds {
+			actuallyChangedOdds[opt.ID] = newOdd
+		}
+	}
+
+	if len(actuallyChangedOdds) == 0 {
+		//  cambió
+		for _, opt := range market.Options {
+			resultOdds[opt.ID] = opt.CurrentOdds
+		}
+		return resultOdds, nil
+	}
+
 	if mode == "REBALANCE" {
-		rebalanced, err := u.integritySvc.CalculateRebalance(market.Options, optionsOdds, minMargin)
+		rebalanced, err := u.integritySvc.CalculateRebalance(market.Options, actuallyChangedOdds, minMargin)
 		if err != nil {
 			return nil, err
 		}
@@ -97,7 +112,7 @@ func (u *UpdateMarketOddsUseCase) Execute(ctx context.Context, marketID uuid.UUI
 			return nil, &apperror.RebalanceError{
 				TouchedMass:    overround,
 				MaxTouchedMass: 1.0 + minMargin,
-				Hint:           "Las cuotas no alcanzan el overround objetivo y el modo es REJECT",
+				Hint:           "Las cuotas ingresadas son muy altas y no garantizan el margen mínimo de ganancia para la casa.",
 			}
 		}
 		

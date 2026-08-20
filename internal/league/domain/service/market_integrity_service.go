@@ -52,7 +52,7 @@ func (s *MarketIntegrityService) CalculateRebalance(
 			return nil, &apperror.RebalanceError{
 				TouchedMass:    touchedMass,
 				MaxTouchedMass: targetOverround,
-				Hint:           "Las cuotas no alcanzan el overround objetivo",
+				Hint:           "Las cuotas ingresadas son demasiado altas y no permiten asegurar un margen de ganancia para la casa.",
 			}
 		}
 		return updatedOdds, nil
@@ -62,7 +62,7 @@ func (s *MarketIntegrityService) CalculateRebalance(
 		return nil, &apperror.RebalanceError{
 			TouchedMass:    touchedMass,
 			MaxTouchedMass: targetOverround,
-			Hint:           "Las opciones editadas ya consumen todo el overround objetivo",
+			Hint:           "Las cuotas editadas son demasiado altas y no dejan margen para recalcular las demás opciones de forma segura.",
 		}
 	}
 

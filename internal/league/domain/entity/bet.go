@@ -33,6 +33,21 @@ type Bet struct {
 	ParticipantBonusID *uuid.UUID
 }
 
+func (b *Bet) CalculateCashoutValue(currentMarketOdds float64) float64 {
+	houseMargin := 0.90
+	
+	if currentMarketOdds <= 0.0 {
+		return 0.0
+	}
+	
+	cashoutValue := (b.PotentialWin / currentMarketOdds) * houseMargin
+	if cashoutValue > b.PotentialWin {
+		return b.PotentialWin
+	}
+	
+	return cashoutValue
+}
+
 func NewBet(participantID, marketOptionID uuid.UUID, amount, odds float64, bonusID *uuid.UUID) (*Bet, error) {
 	if amount <= 0 {
 		return nil, apperror.ErrInvalidBetAmount
