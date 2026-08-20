@@ -60,8 +60,9 @@ func (uc *PlaceCombinedBetUseCase) Execute(ctx context.Context, userID uuid.UUID
 	selections := make([]valueobject.Selection, len(req.Selections))
 	for i, sel := range req.Selections {
 		selections[i] = valueobject.Selection{
-			MarketID:    sel.MarketID,
-			SelectionID: sel.SelectionID,
+			MarketID:     sel.MarketID,
+			SelectionID:  sel.SelectionID,
+			AcceptedOdds: sel.AcceptedOdds,
 		}
 	}
 

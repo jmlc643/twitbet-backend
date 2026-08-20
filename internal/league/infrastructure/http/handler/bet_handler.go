@@ -1,16 +1,18 @@
 package handler
 
 import (
+	"errors"
 	"net/http"
+	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/jmlc643/twitbet-backend/internal/league/application/usecase"
+	"github.com/jmlc643/twitbet-backend/internal/league/domain/apperror"
 	"github.com/jmlc643/twitbet-backend/internal/league/domain/entity"
 	"github.com/jmlc643/twitbet-backend/internal/league/infrastructure/http/dto/request"
 	"github.com/jmlc643/twitbet-backend/internal/league/infrastructure/http/dto/response"
-	"strconv"
-	"time"
 )
 
 type BetHandler struct {
@@ -73,8 +75,16 @@ func (h *BetHandler) PlaceBet(c *gin.Context) {
 		bonusID = &id
 	}
 
-	bet, err := h.placeBetUseCase.Execute(c.Request.Context(), userID, leagueID, marketID, marketOptionID, req.Amount, bonusID)
+	bet, err := h.placeBetUseCase.Execute(c.Request.Context(), userID, leagueID, marketID, marketOptionID, req.Amount, req.AcceptedOdds, bonusID)
 	if err != nil {
+		var oddsChangedErr *apperror.OddsChangedError
+		if errors.As(err, &oddsChangedErr) {
+			c.JSON(http.StatusConflict, gin.H{
+				"error":        oddsChangedErr.Error(),
+				"current_odds": oddsChangedErr.CurrentOdds,
+			})
+			return
+		}
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}

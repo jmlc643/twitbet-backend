@@ -53,12 +53,10 @@ func (v *CombinedBetValidator) Validate(ctx context.Context, selections []valueo
 		}
 
 		var optionName string
-		var odds float64
 		found := false
 		for _, opt := range market.Options {
 			if opt.ID == sel.SelectionID {
 				optionName = opt.Name
-				odds = opt.CurrentOdds
 				found = true
 				break
 			}
@@ -68,7 +66,7 @@ func (v *CombinedBetValidator) Validate(ctx context.Context, selections []valueo
 			return nil, apperror.ErrMarketOptionNotFound
 		}
 
-		leg := entity.NewCombinedBetLeg(uuid.Nil, market.ID, sel.SelectionID, market.MatchID, optionName, odds)
+		leg := entity.NewCombinedBetLeg(uuid.Nil, market.ID, sel.SelectionID, market.MatchID, optionName, sel.AcceptedOdds)
 		legs = append(legs, leg)
 	}
 

@@ -141,6 +141,26 @@ func (r *combinedBetRepository) PlaceCombinedBetAtomic(ctx context.Context, bet 
 			}
 		}
 
+		updatedOdds := make(map[string]float64)
+		for _, leg := range bet.Legs {
+			var marketOption model.MarketOptionModel
+			if err := tx.Set("gorm:query_option", "FOR UPDATE").Where("id = ?", leg.SelectionID.String()).First(&marketOption).Error; err != nil {
+				return err
+			}
+			if marketOption.CurrentOdds != leg.OddsAtPlacement {
+				updatedOdds[leg.SelectionID.String()] = marketOption.CurrentOdds
+			}
+		}
+		
+		if len(updatedOdds) > 0 {
+			var firstOdd float64
+			for _, v := range updatedOdds {
+				firstOdd = v
+				break
+			}
+			return &apperror.OddsChangedError{CurrentOdds: firstOdd, UpdatedOdds: updatedOdds}
+		}
+
 		betModel := mapper.ToCombinedBetModel(bet)
 		if err := tx.Create(betModel).Error; err != nil {
 			return err

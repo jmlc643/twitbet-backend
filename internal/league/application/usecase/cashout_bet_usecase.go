@@ -12,12 +12,14 @@ import (
 type CashoutBetUseCase struct {
 	betRepo    repository.BetRepository
 	leagueRepo repository.LeagueRepository
+	matchRepo  repository.MatchRepository
 }
 
-func NewCashoutBetUseCase(betRepo repository.BetRepository, leagueRepo repository.LeagueRepository) *CashoutBetUseCase {
+func NewCashoutBetUseCase(betRepo repository.BetRepository, leagueRepo repository.LeagueRepository, matchRepo repository.MatchRepository) *CashoutBetUseCase {
 	return &CashoutBetUseCase{
 		betRepo:    betRepo,
 		leagueRepo: leagueRepo,
+		matchRepo:  matchRepo,
 	}
 }
 
@@ -46,7 +48,15 @@ func (uc *CashoutBetUseCase) Execute(ctx context.Context, userID, betID uuid.UUI
 		return nil, errors.New("No autorizado para hacer cashout de esta apuesta")
 	}
 
-	cashoutAmount := bet.Amount * 0.95
+	currentOdds, err := uc.matchRepo.GetMarketOptionCurrentOdds(ctx, bet.MarketOptionID)
+	if err != nil {
+		return nil, err
+	}
+
+	cashoutAmount := bet.CalculateCashoutValue(currentOdds)
+	if cashoutAmount <= 0 {
+		return nil, errors.New("Cashout no disponible para esta apuesta")
+	}
 
 	transaction, err := entity.NewTransaction(participant.LeagueID, userID, cashoutAmount, entity.TransactionTypeCashout)
 	if err != nil {

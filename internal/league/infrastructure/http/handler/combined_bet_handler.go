@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"errors"
 	"net/http"
 	"strconv"
 	"time"
@@ -228,6 +229,16 @@ func (h *CombinedBetHandler) Cashout(c *gin.Context) {
 }
 
 func (h *CombinedBetHandler) handleDomainError(c *gin.Context, err error) {
+	var oddsChangedErr *apperror.OddsChangedError
+	if errors.As(err, &oddsChangedErr) {
+		c.JSON(http.StatusConflict, gin.H{
+			"error":        oddsChangedErr.Error(),
+			"current_odds": oddsChangedErr.CurrentOdds,
+			"updated_odds": oddsChangedErr.UpdatedOdds,
+		})
+		return
+	}
+
 	switch err {
 	case apperror.ErrLeagueNotFound, apperror.ErrMarketNotFound, apperror.ErrMarketOptionNotFound, apperror.ErrBetNotFound:
 		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
