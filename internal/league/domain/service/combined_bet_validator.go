@@ -20,6 +20,49 @@ func NewCombinedBetValidator(matchRepo repository.MatchRepository) *CombinedBetV
 	}
 }
 
+func (v *CombinedBetValidator) ValidateDuplicateTypePerMatch(ctx context.Context, legs []entity.CombinedBetLeg, participant entity.Participant) error {
+	seen := make(map[string]bool)
+	for _, leg := range legs {
+		market, err := v.matchRepo.GetMarketByID(ctx, leg.MarketID)
+		if err != nil || market == nil {
+			continue
+		}
+		if market.Type == string(entity.MarketTypeOther) {
+			continue
+		}
+		matchKey := "league"
+		if market.MatchID != nil {
+			matchKey = market.MatchID.String()
+		}
+		key := matchKey + ":" + market.Type
+		if seen[key] {
+			return apperror.ErrDuplicateMarketType
+		}
+		seen[key] = true
+	}
+	active, err := v.matchRepo.GetActiveMarketTypesByParticipant(ctx, participant.ID)
+	if err != nil {
+		return err
+	}
+	for _, leg := range legs {
+		market, err := v.matchRepo.GetMarketByID(ctx, leg.MarketID)
+		if err != nil || market == nil {
+			continue
+		}
+		if market.Type == string(entity.MarketTypeOther) {
+			continue
+		}
+		matchKey := "league"
+		if market.MatchID != nil {
+			matchKey = market.MatchID.String()
+		}
+		if types, ok := active[matchKey]; ok && types[market.Type] {
+			return apperror.ErrDuplicateMarketType
+		}
+	}
+	return nil
+}
+
 func (v *CombinedBetValidator) Validate(ctx context.Context, selections []valueobject.Selection, participant entity.Participant) ([]entity.CombinedBetLeg, error) {
 	if len(selections) < 2 {
 		return nil, apperror.ErrInvalidBetAmount
@@ -58,6 +101,9 @@ func (v *CombinedBetValidator) Validate(ctx context.Context, selections []valueo
 			if opt.ID == sel.SelectionID {
 				optionName = opt.Name
 				found = true
+				if opt.IsBlocked() {
+					return nil, apperror.ErrMarketOptionBlocked
+				}
 				break
 			}
 		}
@@ -68,6 +114,10 @@ func (v *CombinedBetValidator) Validate(ctx context.Context, selections []valueo
 
 		leg := entity.NewCombinedBetLeg(uuid.Nil, market.ID, sel.SelectionID, market.MatchID, optionName, sel.AcceptedOdds)
 		legs = append(legs, leg)
+	}
+
+	if err := v.ValidateDuplicateTypePerMatch(ctx, legs, participant); err != nil {
+		return nil, err
 	}
 
 	return legs, nil

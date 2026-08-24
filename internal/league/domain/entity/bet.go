@@ -35,16 +35,20 @@ type Bet struct {
 
 func (b *Bet) CalculateCashoutValue(currentMarketOdds float64) float64 {
 	houseMargin := 0.90
-	
+	maxPayout := 500000.0
+
 	if currentMarketOdds <= 0.0 {
 		return 0.0
 	}
-	
+
 	cashoutValue := (b.PotentialWin / currentMarketOdds) * houseMargin
 	if cashoutValue > b.PotentialWin {
-		return b.PotentialWin
+		cashoutValue = b.PotentialWin
 	}
-	
+	if cashoutValue > maxPayout {
+		cashoutValue = maxPayout
+	}
+
 	return cashoutValue
 }
 

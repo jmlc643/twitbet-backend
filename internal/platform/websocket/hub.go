@@ -51,7 +51,7 @@ func (h *Hub) Run() {
 
 func (h *Hub) listenRedis() {
 	ctx := context.Background()
-	pubsub := h.redisClient.Subscribe(ctx, "market_events")
+	pubsub := h.redisClient.Subscribe(ctx, "market_events", "match_events")
 	defer pubsub.Close()
 
 	ch := pubsub.Channel()

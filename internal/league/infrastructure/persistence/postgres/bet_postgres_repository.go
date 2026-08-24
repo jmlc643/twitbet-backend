@@ -92,6 +92,17 @@ func (r *BetRepository) CashoutAtomic(ctx context.Context, bet *entity.Bet, tran
 	}
 	defer tx.Rollback()
 
+	var existingBet model.BetModel
+	if err := tx.Set("gorm:query_option", "FOR UPDATE").Where("id = ?", bet.ID.String()).First(&existingBet).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return apperror.ErrBetNotFound
+		}
+		return err
+	}
+	if existingBet.Status != string(entity.BetStatusAccepted) {
+		return apperror.ErrCashoutNotAvailable
+	}
+
 	var participant model.ParticipantModel
 	if err := tx.Set("gorm:query_option", "FOR UPDATE").Where("id = ?", bet.ParticipantID.String()).First(&participant).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -110,8 +121,10 @@ func (r *BetRepository) CashoutAtomic(ctx context.Context, bet *entity.Bet, tran
 		return err
 	}
 
-	betModel := mapper.EntityToBetModel(bet)
-	if err := tx.Save(betModel).Error; err != nil {
+	if err := tx.Model(&model.BetModel{}).Where("id = ? AND status = ?", bet.ID.String(), string(entity.BetStatusAccepted)).Updates(map[string]interface{}{
+		"status":     string(entity.BetStatusCashout),
+		"updated_at": bet.UpdatedAt,
+	}).Error; err != nil {
 		return err
 	}
 

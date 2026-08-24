@@ -53,8 +53,10 @@ func RegisterRoutes(router *gin.Engine, db *gorm.DB, rdb *redis.Client, jwtSecre
 	cancelMarketUC := usecase.NewCancelMarketUseCase(betRepo, matchRepo, leagueRepo, marketPublisher)
 	updateMarketOptionStatusUC := usecase.NewUpdateMarketOptionStatusUseCase(matchRepo, leagueRepo, marketPublisher)
 	addMarketOptionsUC := usecase.NewAddMarketOptionsUseCase(matchRepo, leagueRepo, marketPublisher)
+	deleteMarketUC := usecase.NewDeleteMarketUseCase(matchRepo, leagueRepo, marketPublisher)
+	deleteMarketOptionUC := usecase.NewDeleteMarketOptionUseCase(matchRepo, leagueRepo, marketPublisher)
 
-	marketLiveHandler := handler.NewMarketLiveHandler(*updateMarketStatusUC, *updateMarketOddsUC, *resolveMarketUC, *cancelMarketUC, updateMarketOptionStatusUC, addMarketOptionsUC)
+	marketLiveHandler := handler.NewMarketLiveHandler(*updateMarketStatusUC, *updateMarketOddsUC, *resolveMarketUC, *cancelMarketUC, updateMarketOptionStatusUC, addMarketOptionsUC, deleteMarketUC, deleteMarketOptionUC)
 
 	// Handlers
 	leagueHandler := handler.NewLeagueHandler(
@@ -85,7 +87,7 @@ func RegisterRoutes(router *gin.Engine, db *gorm.DB, rdb *redis.Client, jwtSecre
 	placeBetUC := usecase.NewPlaceBetUseCase(betRepo, leagueRepo, matchRepo, marketPublisher)
 
 	getUserBetsUC := usecase.NewGetUserBetsUseCase(betRepo, leagueRepo)
-	cashoutBetUC := usecase.NewCashoutBetUseCase(betRepo, leagueRepo, matchRepo)
+	cashoutBetUC := usecase.NewCashoutBetUseCase(betRepo, leagueRepo, matchRepo, marketPublisher)
 	betHandler := handler.NewBetHandler(placeBetUC, getUserBetsUC, cashoutBetUC)
 
 	// Casos de uso de Apuestas Combinadas
@@ -142,12 +144,14 @@ func RegisterRoutes(router *gin.Engine, db *gorm.DB, rdb *redis.Client, jwtSecre
 		marketRoutes := api.Group("/markets")
 		marketRoutes.Use(authMiddleware)
 		{
-			marketRoutes.PATCH("/:id/status", marketLiveHandler.UpdateStatus)
+				marketRoutes.PATCH("/:id/status", marketLiveHandler.UpdateStatus)
 			marketRoutes.PATCH("/:id/odds", marketLiveHandler.UpdateOdds)
 			marketRoutes.POST("/:id/resolve", marketLiveHandler.ResolveMarket)
 			marketRoutes.POST("/:id/cancel", marketLiveHandler.CancelMarket)
 			marketRoutes.POST("/:id/options", marketLiveHandler.AddOptions)
 			marketRoutes.PATCH("/:id/options/:option_id/status", marketLiveHandler.UpdateOptionStatus)
+			marketRoutes.DELETE("/:id", marketLiveHandler.DeleteMarket)
+			marketRoutes.DELETE("/:id/options/:option_id", marketLiveHandler.DeleteMarketOption)
 		}
 
 		betRoutes := api.Group("/bets")
