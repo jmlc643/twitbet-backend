@@ -5,21 +5,25 @@ import (
 	"errors"
 
 	"github.com/google/uuid"
+	"github.com/jmlc643/twitbet-backend/internal/league/domain/apperror"
 	"github.com/jmlc643/twitbet-backend/internal/league/domain/entity"
+	"github.com/jmlc643/twitbet-backend/internal/league/domain/port"
 	"github.com/jmlc643/twitbet-backend/internal/league/domain/repository"
 )
 
 type CashoutBetUseCase struct {
-	betRepo    repository.BetRepository
-	leagueRepo repository.LeagueRepository
-	matchRepo  repository.MatchRepository
+	betRepo         repository.BetRepository
+	leagueRepo      repository.LeagueRepository
+	matchRepo       repository.MatchRepository
+	marketPublisher port.MarketEventPublisher
 }
 
-func NewCashoutBetUseCase(betRepo repository.BetRepository, leagueRepo repository.LeagueRepository, matchRepo repository.MatchRepository) *CashoutBetUseCase {
+func NewCashoutBetUseCase(betRepo repository.BetRepository, leagueRepo repository.LeagueRepository, matchRepo repository.MatchRepository, marketPublisher port.MarketEventPublisher) *CashoutBetUseCase {
 	return &CashoutBetUseCase{
-		betRepo:    betRepo,
-		leagueRepo: leagueRepo,
-		matchRepo:  matchRepo,
+		betRepo:         betRepo,
+		leagueRepo:      leagueRepo,
+		matchRepo:       matchRepo,
+		marketPublisher: marketPublisher,
 	}
 }
 
@@ -29,11 +33,11 @@ func (uc *CashoutBetUseCase) Execute(ctx context.Context, userID, betID uuid.UUI
 		return nil, err
 	}
 	if bet == nil {
-		return nil, errors.New("Apuesta no encontrada")
+		return nil, apperror.ErrBetNotFound
 	}
 
-	if bet.Status != entity.BetStatusAccepted && bet.Status != entity.BetStatusPending {
-		return nil, errors.New("La apuesta no está activa")
+	if bet.Status != entity.BetStatusAccepted {
+		return nil, apperror.ErrCashoutNotAvailable
 	}
 
 	if bet.IsBonusBet {
@@ -45,7 +49,25 @@ func (uc *CashoutBetUseCase) Execute(ctx context.Context, userID, betID uuid.UUI
 		return nil, err
 	}
 	if participant == nil || participant.UserID != userID {
-		return nil, errors.New("No autorizado para hacer cashout de esta apuesta")
+		return nil, apperror.ErrUnauthorized
+	}
+
+	market, err := uc.matchRepo.GetMarketByOptionID(ctx, bet.MarketOptionID)
+	if err != nil {
+		return nil, err
+	}
+	if market != nil {
+		if entity.NotResolvableMarketStatus(market) {
+			return nil, apperror.ErrCashoutNotAvailable
+		}
+		if market.Status == string(entity.MarketStatusSuspended) || market.Status == string(entity.MarketStatusCancelled) {
+			return nil, apperror.ErrCashoutNotAvailable
+		}
+		for _, opt := range market.Options {
+			if opt.ID == bet.MarketOptionID && opt.IsBlocked() {
+				return nil, apperror.ErrCashoutNotAvailable
+			}
+		}
 	}
 
 	currentOdds, err := uc.matchRepo.GetMarketOptionCurrentOdds(ctx, bet.MarketOptionID)
@@ -55,7 +77,7 @@ func (uc *CashoutBetUseCase) Execute(ctx context.Context, userID, betID uuid.UUI
 
 	cashoutAmount := bet.CalculateCashoutValue(currentOdds)
 	if cashoutAmount <= 0 {
-		return nil, errors.New("Cashout no disponible para esta apuesta")
+		return nil, apperror.ErrCashoutNotAvailable
 	}
 
 	transaction, err := entity.NewTransaction(participant.LeagueID, userID, cashoutAmount, entity.TransactionTypeCashout)
@@ -69,6 +91,10 @@ func (uc *CashoutBetUseCase) Execute(ctx context.Context, userID, betID uuid.UUI
 	err = uc.betRepo.CashoutAtomic(ctx, bet, transaction)
 	if err != nil {
 		return nil, err
+	}
+
+	if uc.marketPublisher != nil {
+		_ = uc.marketPublisher.PublishParticipantBalanceUpdated(ctx, participant.ID, participant.LeagueID, userID)
 	}
 
 	return bet, nil

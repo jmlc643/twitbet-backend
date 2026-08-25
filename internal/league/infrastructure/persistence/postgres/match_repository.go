@@ -41,14 +41,17 @@ func (r *matchRepository) CreateMarket(ctx context.Context, market *entity.Marke
 	}
 
 	dbMarket := &model.MarketModel{
-		ID:        market.ID.String(),
-		LeagueID:  market.LeagueID.String(),
-		MatchID:   matchID,
-		Name:      market.Name,
-		Type:      market.Type,
-		Status:    market.Status,
-		CreatedAt: market.CreatedAt,
-		UpdatedAt: market.UpdatedAt,
+		ID:                 market.ID.String(),
+		LeagueID:           market.LeagueID.String(),
+		MatchID:            matchID,
+		Name:               market.Name,
+		Type:               market.Type,
+		Status:             market.Status,
+		Seq:                market.Seq,
+		SuspendReason:      market.SuspendReason,
+		CancellationReason: market.CancellationReason,
+		CreatedAt:          market.CreatedAt,
+		UpdatedAt:          market.UpdatedAt,
 	}
 
 	for _, opt := range market.Options {
@@ -207,14 +210,17 @@ func (r *matchRepository) UpdateMarket(ctx context.Context, market *entity.Marke
 	}
 
 	dbMarket := &model.MarketModel{
-		ID:        market.ID.String(),
-		LeagueID:  market.LeagueID.String(),
-		MatchID:   matchID,
-		Name:      market.Name,
-		Type:      market.Type,
-		Status:    market.Status,
-		CreatedAt: market.CreatedAt,
-		UpdatedAt: market.UpdatedAt,
+		ID:                 market.ID.String(),
+		LeagueID:           market.LeagueID.String(),
+		MatchID:            matchID,
+		Name:               market.Name,
+		Type:               market.Type,
+		Status:             market.Status,
+		Seq:                market.Seq,
+		SuspendReason:      market.SuspendReason,
+		CancellationReason: market.CancellationReason,
+		CreatedAt:          market.CreatedAt,
+		UpdatedAt:          market.UpdatedAt,
 	}
 
 	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
@@ -246,14 +252,17 @@ func (r *matchRepository) UpdateMarketAndHistory(ctx context.Context, market *en
 	}
 
 	dbMarket := &model.MarketModel{
-		ID:        market.ID.String(),
-		LeagueID:  market.LeagueID.String(),
-		MatchID:   matchID,
-		Name:      market.Name,
-		Type:      market.Type,
-		Status:    market.Status,
-		CreatedAt: market.CreatedAt,
-		UpdatedAt: market.UpdatedAt,
+		ID:                 market.ID.String(),
+		LeagueID:           market.LeagueID.String(),
+		MatchID:            matchID,
+		Name:               market.Name,
+		Type:               market.Type,
+		Status:             market.Status,
+		Seq:                market.Seq,
+		SuspendReason:      market.SuspendReason,
+		CancellationReason: market.CancellationReason,
+		CreatedAt:          market.CreatedAt,
+		UpdatedAt:          market.UpdatedAt,
 	}
 
 	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
@@ -463,15 +472,18 @@ func mapDBMarketsToEntity(dbMarkets []model.MarketModel) []entity.Market {
 		}
 
 		markets = append(markets, entity.Market{
-			ID:        mID,
-			LeagueID:  lID,
-			MatchID:   matchID,
-			Name:      m.Name,
-			Type:      m.Type,
-			Status:    m.Status,
-			Options:   options,
-			CreatedAt: m.CreatedAt,
-			UpdatedAt: m.UpdatedAt,
+			ID:                 mID,
+			LeagueID:           lID,
+			MatchID:            matchID,
+			Name:               m.Name,
+			Type:               m.Type,
+			Status:             m.Status,
+			Seq:                m.Seq,
+			SuspendReason:      m.SuspendReason,
+			CancellationReason: m.CancellationReason,
+			Options:            options,
+			CreatedAt:          m.CreatedAt,
+			UpdatedAt:          m.UpdatedAt,
 		})
 	}
 	return markets
@@ -490,6 +502,121 @@ func (r *matchRepository) GetMarketOptionCurrentOdds(ctx context.Context, option
 		return 0, err
 	}
 	return opt.CurrentOdds, nil
+}
+
+func (r *matchRepository) GetMarketByOptionID(ctx context.Context, optionID uuid.UUID) (*entity.Market, error) {
+	var opt model.MarketOptionModel
+	if err := r.db.WithContext(ctx).Where("id = ?", optionID.String()).First(&opt).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return r.GetMarketByID(ctx, uuid.MustParse(opt.MarketID))
+}
+
+func (r *matchRepository) DeleteMarket(ctx context.Context, marketID uuid.UUID) error {
+	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if err := tx.Where("market_id = ?", marketID.String()).Delete(&model.MarketOptionModel{}).Error; err != nil {
+			return err
+		}
+		if err := tx.Where("id = ?", marketID.String()).Delete(&model.MarketModel{}).Error; err != nil {
+			return err
+		}
+		return nil
+	})
+}
+
+func (r *matchRepository) DeleteMarketOption(ctx context.Context, marketID uuid.UUID, optionID uuid.UUID) error {
+	return r.db.WithContext(ctx).Where("id = ? AND market_id = ?", optionID.String(), marketID.String()).Delete(&model.MarketOptionModel{}).Error
+}
+
+func (r *matchRepository) HasActiveBetsForMarket(ctx context.Context, marketID uuid.UUID) (bool, error) {
+	var optionIDs []string
+	if err := r.db.WithContext(ctx).Model(&model.MarketOptionModel{}).Where("market_id = ?", marketID.String()).Pluck("id", &optionIDs).Error; err != nil {
+		return false, err
+	}
+	if len(optionIDs) == 0 {
+		return false, nil
+	}
+	var count int64
+	if err := r.db.WithContext(ctx).Model(&model.BetModel{}).Where("market_option_id IN ? AND status IN ?", optionIDs, []string{string(entity.BetStatusPending), string(entity.BetStatusAccepted)}).Count(&count).Error; err != nil {
+		return false, err
+	}
+	if count > 0 {
+		return true, nil
+	}
+	var legCount int64
+	if err := r.db.WithContext(ctx).Model(&model.CombinedBetLegModel{}).Where("market_id = ? AND status = ?", marketID.String(), "PENDING").Count(&legCount).Error; err != nil {
+		return false, err
+	}
+	return legCount > 0, nil
+}
+
+func (r *matchRepository) HasActiveBetsForOption(ctx context.Context, optionID uuid.UUID) (bool, error) {
+	var count int64
+	if err := r.db.WithContext(ctx).Model(&model.BetModel{}).Where("market_option_id = ? AND status IN ?", optionID.String(), []string{string(entity.BetStatusPending), string(entity.BetStatusAccepted)}).Count(&count).Error; err != nil {
+		return false, err
+	}
+	if count > 0 {
+		return true, nil
+	}
+	var legCount int64
+	if err := r.db.WithContext(ctx).Model(&model.CombinedBetLegModel{}).Where("selection_id = ? AND status = ?", optionID.String(), "PENDING").Count(&legCount).Error; err != nil {
+		return false, err
+	}
+	return legCount > 0, nil
+}
+
+func (r *matchRepository) GetActiveMarketTypesByParticipant(ctx context.Context, participantID uuid.UUID) (map[string]map[string]bool, error) {
+	result := make(map[string]map[string]bool)
+	type row struct {
+		MarketType string
+		MatchID    *string
+	}
+	var rows []row
+	query := `
+		SELECT m.type as market_type, m.match_id
+		FROM bets b
+		JOIN market_options mo ON b.market_option_id = mo.id
+		JOIN markets m ON mo.market_id = m.id
+		WHERE b.participant_id = ? AND b.status IN ('PENDING','ACCEPTED')
+	`
+	if err := r.db.WithContext(ctx).Raw(query, participantID.String()).Scan(&rows).Error; err != nil {
+		return nil, err
+	}
+	for _, row := range rows {
+		key := "league"
+		if row.MatchID != nil {
+			key = *row.MatchID
+		}
+		if result[key] == nil {
+			result[key] = make(map[string]bool)
+		}
+		result[key][row.MarketType] = true
+	}
+	var combinedRows []row
+	query2 := `
+		SELECT m.type as market_type, m.match_id
+		FROM combined_bet_legs l
+		JOIN combined_bets cb ON l.combined_bet_id = cb.id
+		JOIN markets m ON l.market_id = m.id
+		WHERE cb.participant_id = ? AND cb.status IN ('PENDING','ACCEPTED') AND l.status = 'PENDING'
+	`
+	if err := r.db.WithContext(ctx).Raw(query2, participantID.String()).Scan(&combinedRows).Error; err != nil {
+		return nil, err
+	}
+	for _, row := range combinedRows {
+		key := "league"
+		if row.MatchID != nil {
+			key = *row.MatchID
+		}
+		if result[key] == nil {
+			result[key] = make(map[string]bool)
+		}
+		result[key][row.MarketType] = true
+	}
+	return result, nil
 }
 
 func marketTypeOrderSQL() string {

@@ -85,6 +85,10 @@ func (h *BetHandler) PlaceBet(c *gin.Context) {
 			})
 			return
 		}
+		if errors.Is(err, apperror.ErrDuplicateMarketType) {
+			c.JSON(http.StatusConflict, gin.H{"error": err.Error(), "code": "DUPLICATE_MARKET_TYPE"})
+			return
+		}
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
@@ -211,6 +215,10 @@ func (h *BetHandler) Cashout(c *gin.Context) {
 
 	bet, err := h.cashoutBetUseCase.Execute(c.Request.Context(), userID, betID)
 	if err != nil {
+		if errors.Is(err, apperror.ErrCashoutNotAvailable) {
+			c.JSON(http.StatusConflict, gin.H{"error": err.Error(), "code": "CASHOUT_NOT_AVAILABLE"})
+			return
+		}
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}

@@ -19,9 +19,11 @@ type MarketLiveHandler struct {
 	cancelMarketUseCase          usecase.CancelMarketUseCase
 	updateMarketOptionStatusUC   *usecase.UpdateMarketOptionStatusUseCase
 	addMarketOptionsUC           *usecase.AddMarketOptionsUseCase
+	deleteMarketUC               *usecase.DeleteMarketUseCase
+	deleteMarketOptionUC         *usecase.DeleteMarketOptionUseCase
 }
 
-func NewMarketLiveHandler(updateStatusUseCase usecase.UpdateMarketStatusUseCase, updateOddsUseCase usecase.UpdateMarketOddsUseCase, resolveMarketUseCase usecase.ResolveMarketUseCase, cancelMarketUseCase usecase.CancelMarketUseCase, updateMarketOptionStatusUC *usecase.UpdateMarketOptionStatusUseCase, addMarketOptionsUC *usecase.AddMarketOptionsUseCase) *MarketLiveHandler {
+func NewMarketLiveHandler(updateStatusUseCase usecase.UpdateMarketStatusUseCase, updateOddsUseCase usecase.UpdateMarketOddsUseCase, resolveMarketUseCase usecase.ResolveMarketUseCase, cancelMarketUseCase usecase.CancelMarketUseCase, updateMarketOptionStatusUC *usecase.UpdateMarketOptionStatusUseCase, addMarketOptionsUC *usecase.AddMarketOptionsUseCase, deleteMarketUC *usecase.DeleteMarketUseCase, deleteMarketOptionUC *usecase.DeleteMarketOptionUseCase) *MarketLiveHandler {
 	return &MarketLiveHandler{
 		updateStatusUseCase:        updateStatusUseCase,
 		updateOddsUseCase:          updateOddsUseCase,
@@ -29,6 +31,8 @@ func NewMarketLiveHandler(updateStatusUseCase usecase.UpdateMarketStatusUseCase,
 		cancelMarketUseCase:        cancelMarketUseCase,
 		updateMarketOptionStatusUC: updateMarketOptionStatusUC,
 		addMarketOptionsUC:         addMarketOptionsUC,
+		deleteMarketUC:             deleteMarketUC,
+		deleteMarketOptionUC:       deleteMarketOptionUC,
 	}
 }
 
@@ -290,4 +294,74 @@ func (h *MarketLiveHandler) AddOptions(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Opciones agregadas exitosamente"})
+}
+
+func (h *MarketLiveHandler) DeleteMarket(c *gin.Context) {
+	ownerIDStr, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "no autorizado"})
+		return
+	}
+	ownerID, err := uuid.Parse(ownerIDStr.(string))
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "ID de usuario inválido"})
+		return
+	}
+	marketIDStr := c.Param("id")
+	marketID, err := uuid.Parse(marketIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID de mercado inválido"})
+		return
+	}
+	if err := h.deleteMarketUC.Execute(c.Request.Context(), marketID, ownerID); err != nil {
+		if errors.Is(err, apperror.ErrMarketHasBets) {
+			c.JSON(http.StatusConflict, gin.H{"error": err.Error()})
+			return
+		}
+		if errors.Is(err, apperror.ErrUnauthorized) {
+			c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "Mercado eliminado exitosamente"})
+}
+
+func (h *MarketLiveHandler) DeleteMarketOption(c *gin.Context) {
+	ownerIDStr, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "no autorizado"})
+		return
+	}
+	ownerID, err := uuid.Parse(ownerIDStr.(string))
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "ID de usuario inválido"})
+		return
+	}
+	marketIDStr := c.Param("id")
+	marketID, err := uuid.Parse(marketIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID de mercado inválido"})
+		return
+	}
+	optionIDStr := c.Param("option_id")
+	optionID, err := uuid.Parse(optionIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID de opción inválido"})
+		return
+	}
+	if err := h.deleteMarketOptionUC.Execute(c.Request.Context(), marketID, optionID, ownerID); err != nil {
+		if errors.Is(err, apperror.ErrMarketOptionHasBets) || errors.Is(err, apperror.ErrLastMarketOption) {
+			c.JSON(http.StatusConflict, gin.H{"error": err.Error()})
+			return
+		}
+		if errors.Is(err, apperror.ErrUnauthorized) {
+			c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "Opción eliminada exitosamente"})
 }

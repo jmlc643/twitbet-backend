@@ -80,6 +80,10 @@ func (uc *ResolveMarketUseCase) Execute(ctx context.Context, marketID uuid.UUID,
 		return err
 	}
 
+	market.Status = string(entity.MarketStatusResolved)
+	market.Seq++
+	_ = uc.matchRepo.UpdateMarket(ctx, market)
+
 	_ = uc.marketPublisher.PublishMarketResolved(ctx, marketID, market.LeagueID, winningOptionIDs)
 
 	_ = uc.marketPublisher.PublishMarketStatusChanged(ctx, marketID, string(entity.MarketStatusResolved))

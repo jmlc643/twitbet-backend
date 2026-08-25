@@ -76,6 +76,20 @@ func (uc *PlaceBetUseCase) Execute(ctx context.Context, userID, leagueID, market
 		return nil, apperror.ErrMarketOptionNotFound
 	}
 
+	if market.Type != string(entity.MarketTypeOther) {
+		active, err := uc.matchRepo.GetActiveMarketTypesByParticipant(ctx, participantID)
+		if err != nil {
+			return nil, err
+		}
+		matchKey := "league"
+		if market.MatchID != nil {
+			matchKey = market.MatchID.String()
+		}
+		if types, ok := active[matchKey]; ok && types[market.Type] {
+			return nil, apperror.ErrDuplicateMarketType
+		}
+	}
+
 	bet, err := entity.NewBet(participantID, marketOptionID, amount, acceptedOdds, bonusID)
 	if err != nil {
 		return nil, err

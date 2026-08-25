@@ -239,6 +239,10 @@ func (h *CombinedBetHandler) handleDomainError(c *gin.Context, err error) {
 		return
 	}
 
+	if errors.Is(err, apperror.ErrDuplicateMarketType) {
+		c.JSON(http.StatusConflict, gin.H{"error": err.Error(), "code": "DUPLICATE_MARKET_TYPE"})
+		return
+	}
 	switch err {
 	case apperror.ErrLeagueNotFound, apperror.ErrMarketNotFound, apperror.ErrMarketOptionNotFound, apperror.ErrBetNotFound:
 		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})

@@ -9,6 +9,8 @@ type MarketModel struct {
 	Name      string    `gorm:"type:varchar(200);not null;column:name"`
 	Type      string    `gorm:"type:varchar(50);not null;default:'OTHER';column:type"`
 	Status    string    `gorm:"type:varchar(50);not null;default:'OPEN';column:status"`
+	Seq                int64     `gorm:"column:seq;default:1"`
+	SuspendReason      *string   `gorm:"type:text;column:suspend_reason"`
 	CancellationReason *string `gorm:"type:text;column:cancellation_reason"`
 	CreatedAt        time.Time `gorm:"column:created_at"`
 	UpdatedAt        time.Time `gorm:"column:updated_at"`

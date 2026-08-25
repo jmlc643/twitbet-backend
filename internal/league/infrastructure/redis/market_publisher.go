@@ -191,3 +191,32 @@ func (p *marketPublisher) PublishParticipantBalanceUpdated(ctx context.Context, 
 	}
 	return p.client.Publish(ctx, "market_events", payload).Err()
 }
+
+type MarketDeletedEvent struct {
+	Type     string    `json:"type"`
+	MarketID uuid.UUID `json:"market_id"`
+}
+
+func (p *marketPublisher) PublishMarketDeleted(ctx context.Context, marketID uuid.UUID) error {
+	event := MarketDeletedEvent{Type: "MARKET_DELETED", MarketID: marketID}
+	payload, err := json.Marshal(event)
+	if err != nil {
+		return err
+	}
+	return p.client.Publish(ctx, "market_events", payload).Err()
+}
+
+type MarketOptionDeletedEvent struct {
+	Type     string    `json:"type"`
+	MarketID uuid.UUID `json:"market_id"`
+	OptionID uuid.UUID `json:"option_id"`
+}
+
+func (p *marketPublisher) PublishMarketOptionDeleted(ctx context.Context, marketID uuid.UUID, optionID uuid.UUID) error {
+	event := MarketOptionDeletedEvent{Type: "MARKET_OPTION_DELETED", MarketID: marketID, OptionID: optionID}
+	payload, err := json.Marshal(event)
+	if err != nil {
+		return err
+	}
+	return p.client.Publish(ctx, "market_events", payload).Err()
+}

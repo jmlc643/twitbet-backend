@@ -24,6 +24,11 @@ var (
 	ErrBetNotFound           = errors.New("Apuesta no encontrada")
 	ErrArbitrageMarket   = errors.New("Mercado de arbitraje detectado (overround < 1)")
 	ErrOddsOutOfBounds   = errors.New("El rebalanceo deja cuotas fuera del rango permitido")
+	ErrDuplicateMarketType = errors.New("Ya tienes una apuesta activa en otro mercado del mismo tipo para este partido")
+	ErrCashoutNotAvailable = errors.New("Cashout no disponible para esta apuesta")
+	ErrMarketHasBets       = errors.New("No se puede eliminar el mercado porque tiene apuestas asociadas")
+	ErrMarketOptionHasBets = errors.New("No se puede eliminar la opción porque tiene apuestas asociadas")
+	ErrLastMarketOption    = errors.New("No se puede eliminar la última opción, el mercado debe tener al menos 2 opciones")
 )
 
 type RebalanceError struct {

@@ -90,6 +90,32 @@ func (uc *PlaceCombinedBetUseCase) Execute(ctx context.Context, userID uuid.UUID
 		return nil, err
 	}
 
+	if len(bet.Legs) > 0 {
+		const K = 10000.0
+		apportioned := req.Stake / float64(len(bet.Legs))
+		for _, leg := range bet.Legs {
+			market, mErr := uc.matchRepo.GetMarketByID(ctx, leg.MarketID)
+			if mErr != nil || market == nil {
+				continue
+			}
+			var totalVirtual float64
+			vols := make([]float64, len(market.Options))
+			for i, opt := range market.Options {
+				vol := K / opt.CurrentOdds
+				if opt.ID == leg.SelectionID {
+					vol += apportioned
+				}
+				vols[i] = vol
+				totalVirtual += vol
+			}
+			for i := range market.Options {
+				market.Options[i].CurrentOdds = totalVirtual / vols[i]
+			}
+			_ = uc.matchRepo.UpdateMarket(ctx, market)
+			_ = uc.marketPublisher.PublishOddsUpdated(ctx, market.ID, market.Options)
+		}
+	}
+
 	_ = uc.marketPublisher.PublishParticipantBalanceUpdated(ctx, participant.ID, req.LeagueID, userID)
 
 	go func(bID uuid.UUID) {

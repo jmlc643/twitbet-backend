@@ -22,6 +22,12 @@ type MatchRepository interface {
 	AddMarketOptions(ctx context.Context, marketID uuid.UUID, options []entity.MarketOption) error
 	UpdateMarketOptionStatus(ctx context.Context, marketID uuid.UUID, optionID uuid.UUID, newStatus string) error
 	GetMarketOptionCurrentOdds(ctx context.Context, optionID uuid.UUID) (float64, error)
+	GetMarketByOptionID(ctx context.Context, optionID uuid.UUID) (*entity.Market, error)
 	UpdateMatchStatusAtomic(ctx context.Context, matchID uuid.UUID, newStatus string) error
 	SaveMarketOddsHistory(ctx context.Context, history []entity.MarketOddsHistory) error
+	DeleteMarket(ctx context.Context, marketID uuid.UUID) error
+	DeleteMarketOption(ctx context.Context, marketID uuid.UUID, optionID uuid.UUID) error
+	HasActiveBetsForMarket(ctx context.Context, marketID uuid.UUID) (bool, error)
+	HasActiveBetsForOption(ctx context.Context, optionID uuid.UUID) (bool, error)
+	GetActiveMarketTypesByParticipant(ctx context.Context, participantID uuid.UUID) (map[string]map[string]bool, error)
 }
