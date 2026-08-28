@@ -15,17 +15,20 @@ type LoginUseCase struct {
 	userRepo     repository.UserRepository
 	hasher       port.PasswordHasher
 	tokenService port.TokenService
+	statsCache   port.UserStatsCache
 }
 
 func NewLoginUseCase(
 	userRepo repository.UserRepository,
 	hasher port.PasswordHasher,
 	tokenService port.TokenService,
+	statsCache port.UserStatsCache,
 ) *LoginUseCase {
 	return &LoginUseCase{
 		userRepo:     userRepo,
 		hasher:       hasher,
 		tokenService: tokenService,
+		statsCache:   statsCache,
 	}
 }
 
@@ -49,14 +52,17 @@ func (uc *LoginUseCase) Execute(ctx context.Context, in input.LoginInput) (*outp
 		return nil, apperror.ErrInternal
 	}
 
+	statsOutput := fetchUserStats(ctx, user.ID, uc.userRepo, uc.statsCache)
+
 	return &output.AuthOutput{
 		Token: token,
 		User: output.UserOutput{
 			ID:        user.ID,
 			Username:  user.Username,
 			Email:     user.Email,
-			AvatarURL: user.AvatarURL,
+			AvatarURL: &user.AvatarURL,
 			CreatedAt: user.CreatedAt,
+			Stats:     statsOutput,
 		},
 	}, nil
 }
