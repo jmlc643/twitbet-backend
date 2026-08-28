@@ -39,11 +39,11 @@ func RegisterRoutes(router *gin.Engine, db *gorm.DB, rdb *redis.Client, cfg *con
 	statsCache := adapter.NewRedisUserStatsCache(rdb)
 
 	registerUC := usecase.NewRegisterUseCase(userRepo, hasher, tokenService, otpRepo, emailService)
-	loginUC := usecase.NewLoginUseCase(userRepo, hasher, tokenService)
+	loginUC := usecase.NewLoginUseCase(userRepo, hasher, tokenService, statsCache)
 	getProfileUC := usecase.NewGetProfileUseCase(userRepo, statsCache)
 	updateProfileUC := usecase.NewUpdateProfileUseCase(userRepo, storageService)
 	uploadAvatarUC := usecase.NewUploadAvatarUseCase(userRepo, storageService)
-	verifyAccountUC := usecase.NewVerifyAccountUseCase(userRepo, otpRepo, tokenService)
+	verifyAccountUC := usecase.NewVerifyAccountUseCase(userRepo, otpRepo, tokenService, statsCache)
 	forgotPasswordUC := usecase.NewForgotPasswordUseCase(userRepo, otpRepo, emailService)
 	verifyResetOtpUC := usecase.NewVerifyResetOtpUseCase(otpRepo)
 	resetPasswordUC := usecase.NewResetPasswordUseCase(userRepo, otpRepo, hasher)

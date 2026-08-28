@@ -15,17 +15,20 @@ type VerifyAccountUseCase struct {
 	userRepo     repository.UserRepository
 	otpRepo      port.OTPRepository
 	tokenService port.TokenService
+	statsCache   port.UserStatsCache
 }
 
 func NewVerifyAccountUseCase(
 	userRepo repository.UserRepository,
 	otpRepo port.OTPRepository,
 	tokenService port.TokenService,
+	statsCache port.UserStatsCache,
 ) *VerifyAccountUseCase {
 	return &VerifyAccountUseCase{
 		userRepo:     userRepo,
 		otpRepo:      otpRepo,
 		tokenService: tokenService,
+		statsCache:   statsCache,
 	}
 }
 
@@ -61,6 +64,8 @@ func (uc *VerifyAccountUseCase) Execute(ctx context.Context, in input.VerifyAcco
 		return nil, apperror.ErrInternal
 	}
 
+	statsOutput := fetchUserStats(ctx, user.ID, uc.userRepo, uc.statsCache)
+
 	return &output.AuthOutput{
 		Token: token,
 		User: output.UserOutput{
@@ -69,6 +74,7 @@ func (uc *VerifyAccountUseCase) Execute(ctx context.Context, in input.VerifyAcco
 			Email:     user.Email,
 			AvatarURL: &user.AvatarURL,
 			CreatedAt: user.CreatedAt,
+			Stats:     statsOutput,
 		},
 	}, nil
 }
