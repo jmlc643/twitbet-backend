@@ -67,7 +67,7 @@ func (uc *VerifyAccountUseCase) Execute(ctx context.Context, in input.VerifyAcco
 			ID:        user.ID,
 			Username:  user.Username,
 			Email:     user.Email,
-			AvatarURL: user.AvatarURL,
+			AvatarURL: &user.AvatarURL,
 			CreatedAt: user.CreatedAt,
 		},
 	}, nil

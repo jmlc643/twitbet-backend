@@ -26,8 +26,8 @@ func LoginRequestToInput(req request.LoginRequest) input.LoginInput {
 
 func AuthOutputToResponse(out *output.AuthOutput) response.AuthResponse {
 	var avatar *string
-	if out.User.AvatarURL != "" {
-		avatar = &out.User.AvatarURL
+	if out.User.AvatarURL != nil && *out.User.AvatarURL != "" {
+		avatar = out.User.AvatarURL
 	}
 	return response.AuthResponse{
 		Token: out.Token,
@@ -37,14 +37,19 @@ func AuthOutputToResponse(out *output.AuthOutput) response.AuthResponse {
 			Email:     out.User.Email,
 			AvatarURL: avatar,
 			CreatedAt: out.User.CreatedAt.Format(time.RFC3339),
+			Stats: &response.UserStatsResponse{
+				Leagues:       out.User.Stats.Leagues,
+				Wins:          out.User.Stats.Wins,
+				Effectiveness: out.User.Stats.Effectiveness,
+			},
 		},
 	}
 }
 
 func UserOutputToResponse(out *output.UserOutput) response.UserResponse {
 	var avatar *string
-	if out.AvatarURL != "" {
-		avatar = &out.AvatarURL
+	if out.AvatarURL != nil && *out.AvatarURL != "" {
+		avatar = out.AvatarURL
 	}
 	return response.UserResponse{
 		ID:        out.ID,
@@ -52,6 +57,11 @@ func UserOutputToResponse(out *output.UserOutput) response.UserResponse {
 		Email:     out.Email,
 		AvatarURL: avatar,
 		CreatedAt: out.CreatedAt.Format(time.RFC3339),
+		Stats: &response.UserStatsResponse{
+			Leagues:       out.Stats.Leagues,
+			Wins:          out.Stats.Wins,
+			Effectiveness: out.Stats.Effectiveness,
+		},
 	}
 }
 

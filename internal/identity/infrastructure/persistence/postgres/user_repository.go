@@ -82,3 +82,37 @@ func (r *UserGormRepository) Update(ctx context.Context, user *entity.User) erro
 	
 	return nil
 }
+
+func (r *UserGormRepository) GetUserStats(ctx context.Context, userID string) (*entity.UserStats, error) {
+	var totalLeagues int64
+	if err := r.db.WithContext(ctx).Table("league_participants").Where("user_id = ?", userID).Count(&totalLeagues).Error; err != nil {
+		return nil, err
+	}
+
+	var totalBets int64
+	if err := r.db.WithContext(ctx).Table("bets").
+		Joins("INNER JOIN league_participants ON bets.participant_id = league_participants.id").
+		Where("league_participants.user_id = ?", userID).
+		Count(&totalBets).Error; err != nil {
+		return nil, err
+	}
+
+	var wins int64
+	if err := r.db.WithContext(ctx).Table("bets").
+		Joins("INNER JOIN league_participants ON bets.participant_id = league_participants.id").
+		Where("league_participants.user_id = ? AND bets.status = ?", userID, "WON").
+		Count(&wins).Error; err != nil {
+		return nil, err
+	}
+
+	effectiveness := 0
+	if totalBets > 0 {
+		effectiveness = int((float64(wins) / float64(totalBets)) * 100)
+	}
+
+	return &entity.UserStats{
+		Leagues:       int(totalLeagues),
+		Wins:          int(wins),
+		Effectiveness: effectiveness,
+	}, nil
+}

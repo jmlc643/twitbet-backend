@@ -55,7 +55,7 @@ func (uc *LoginUseCase) Execute(ctx context.Context, in input.LoginInput) (*outp
 			ID:        user.ID,
 			Username:  user.Username,
 			Email:     user.Email,
-			AvatarURL: user.AvatarURL,
+			AvatarURL: &user.AvatarURL,
 			CreatedAt: user.CreatedAt,
 		},
 	}, nil
